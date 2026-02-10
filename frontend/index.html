@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Wedding Face Forward - Find your photos instantly with AI face recognition. Capture every moment, share every smile.">
+  <title>Wedding Face Forward | Your Photos, Instantly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+</head>
+
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#" class="nav-logo">
+        <span class="logo-icon">📸</span>
+        <span class="logo-text">Face Forward</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features" class="nav-link">How It Works</a>
+        <a href="#enroll" class="nav-link nav-link-cta">Find My Photos</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero" id="hero">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-icon">✨</span>
+        <span>AI-Powered Photo Matching</span>
+      </div>
+      <h1 class="hero-title">
+        <div class="reveal-container">
+          <span class="reveal-text">Find Your</span>
+        </div>
+        <div class="reveal-container">
+          <span class="reveal-text title-accent">Perfect Moments</span>
+        </div>
+      </h1>
+      <p class="hero-subtitle">
+        Capture every smile, every tear, every dance move. Our AI matches your face
+        to all your photos from the event — no manual searching required.
+      </p>
+      <div class="hero-actions">
+        <a href="#enroll" class="btn btn-primary">
+          <span class="btn-icon">📷</span>
+          Get My Photos
+        </a>
+        <a href="#features" class="btn btn-secondary">
+          Learn More
+        </a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-value" id="stat-photos">0</span>
+          <span class="stat-label">Photos Processed</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value" id="stat-guests">0</span>
+          <span class="stat-label">Guests Enrolled</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value" id="stat-faces">0</span>
+          <span class="stat-label">Faces Detected</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-card hero-card-main">
+        <div class="card-glow"></div>
+        <div class="card-content">
+          <div class="preview-placeholder">
+            <span class="preview-icon">🎊</span>
+            <span class="preview-text">Your photos await</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-card hero-card-floating hero-card-1">
+        <div class="mini-preview">👰</div>
+      </div>
+      <div class="hero-card hero-card-floating hero-card-2">
+        <div class="mini-preview">🤵</div>
+      </div>
+      <div class="hero-card hero-card-floating hero-card-3">
+        <div class="mini-preview">💐</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge">How It Works</span>
+        <h2 class="section-title">Three Simple Steps</h2>
+        <p class="section-subtitle">From selfie to photo album in seconds</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <span>📱</span>
+          </div>
+          <div class="feature-number">01</div>
+          <h3 class="feature-title">Take a Selfie</h3>
+          <p class="feature-desc">Upload a clear photo of your face. Our AI will use this to find you in all the event
+            photos.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <span>🧠</span>
+          </div>
+          <div class="feature-number">02</div>
+          <h3 class="feature-title">AI Matching</h3>
+          <p class="feature-desc">Our advanced face recognition instantly matches your selfie to photos where you
+            appear.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <span>📥</span>
+          </div>
+          <div class="feature-number">03</div>
+          <h3 class="feature-title">Get Your Album</h3>
+          <p class="feature-desc">Access your personal collection of solo shots and group photos — all organized just
+            for you.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Enrollment Section -->
+  <section class="enroll-section" id="enroll">
+    <div class="container">
+      <div class="enroll-wrapper">
+        <div class="enroll-info">
+          <span class="section-badge">Get Started</span>
+          <h2 class="section-title">Find Your Photos</h2>
+          <p class="enroll-desc">
+            Upload a selfie and we'll match you to your photos from the event.
+            It only takes a few seconds!
+          </p>
+          <div class="privacy-note">
+            <span class="privacy-icon">🔒</span>
+            <p>Your photo is only used for matching and is never shared. We respect your privacy.</p>
+          </div>
+        </div>
+        <div class="enroll-form-container">
+          <form class="enroll-form" id="enrollForm">
+            <!-- Step 1: Selfie Upload -->
+            <div class="form-step active" id="step-1">
+              <div class="upload-area" id="uploadArea">
+                <input type="file" id="selfieInput" accept="image/*" capture="user" hidden>
+                <div class="upload-content" id="uploadContent">
+                  <div class="upload-icon">📸</div>
+                  <h4>Upload Your Selfie</h4>
+                  <p>Click or drag a photo here</p>
+                  <button type="button" class="btn btn-outline" id="uploadBtn">Choose Photo</button>
+                </div>
+                <div class="preview-content hidden" id="previewContent">
+                  <img id="selfiePreview" alt="Selfie preview">
+                  <button type="button" class="btn btn-outline btn-sm" id="changePhotoBtn">Change Photo</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: User Info -->
+            <div class="form-step" id="step-2">
+              <div class="form-group">
+                <label for="userName" class="form-label">Your Name *</label>
+                <input type="text" id="userName" name="name" class="form-input" placeholder="e.g. John Doe" required>
+              </div>
+              <div class="form-group">
+                <label for="userPhone" class="form-label">Phone Number *</label>
+                <div class="input-group-row">
+                  <input type="text" id="countryCode" class="form-input input-country-code" value="+91" placeholder="+91" required>
+                  <input type="tel" id="userPhone" name="phone" class="form-input" placeholder="Mobile Number" style="flex: 1;" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="userEmail" class="form-label">Email Address</label>
+                <input type="email" id="userEmail" name="email" class="form-input" placeholder="you@example.com">
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="consent" required checked>
+                  <span class="checkmark"></span>
+                  <span>I consent to facial recognition processing for finding my photos</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="form-progress">
+              <div class="progress-step active" data-step="1">
+                <span class="step-number">1</span>
+                <span class="step-label">Selfie</span>
+              </div>
+              <div class="progress-line"></div>
+              <div class="progress-step" data-step="2">
+                <span class="step-number">2</span>
+                <span class="step-label">Details</span>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary hidden" id="prevBtn">Back</button>
+              <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+              <button type="submit" class="btn btn-primary hidden" id="submitBtn">
+                <span class="btn-text">Find My Photos</span>
+                <span class="btn-loading hidden">
+                  <span class="spinner"></span>
+                  Matching...
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results Modal -->
+  <div class="modal hidden" id="resultsModal">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose">&times;</button>
+
+      <!-- Success State -->
+      <div class="modal-body" id="resultSuccess">
+        <div class="success-icon">🎉</div>
+        <h2 class="modal-title">Photos Found!</h2>
+        <p class="modal-subtitle" id="matchMessage">Welcome back! Your photos are ready.</p>
+
+        <div class="photo-summary">
+          <div class="summary-card">
+            <span class="summary-icon">🙋</span>
+            <span class="summary-count" id="soloCount">0</span>
+            <span class="summary-label">Solo Photos</span>
+          </div>
+          <div class="summary-card">
+            <span class="summary-icon">👥</span>
+            <span class="summary-count" id="groupCount">0</span>
+            <span class="summary-label">Group Photos</span>
+          </div>
+        </div>
+
+        <div class="gallery-preview" id="galleryPreview">
+          <!-- Photos will be loaded here -->
+        </div>
+
+        <a href="#" class="btn btn-primary btn-lg" id="viewGalleryBtn">View All My Photos</a>
+      </div>
+
+      <!-- Error State -->
+      <div class="modal-body hidden" id="resultError">
+        <div class="error-icon">😔</div>
+        <h2 class="modal-title">No Match Found</h2>
+        <p class="modal-subtitle" id="errorMessage">We couldn't find your photos yet.</p>
+        <p class="error-hint">This could mean photos are still being processed, or try a clearer selfie.</p>
+        <button class="btn btn-primary" id="tryAgainBtn">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gallery Page (Hidden by default) -->
+  <section class="gallery-section hidden" id="gallerySection">
+    <div class="container">
+      <div class="gallery-header">
+        <a href="#" class="back-link" id="backToHome">
+          <span>←</span> Back to Home
+        </a>
+        <div class="gallery-user">
+          <span class="gallery-user-icon">👤</span>
+          <span class="gallery-user-name" id="galleryUserName">Guest</span>
+        </div>
+      </div>
+
+      <div class="gallery-tabs">
+        <button class="tab-btn active" data-tab="solo">
+          <span class="tab-icon">🙋</span>
+          Solo Photos
+          <span class="tab-count" id="tabSoloCount">0</span>
+        </button>
+        <button class="tab-btn" data-tab="group">
+          <span class="tab-icon">👥</span>
+          Group Photos
+          <span class="tab-count" id="tabGroupCount">0</span>
+        </button>
+      </div>
+
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- Photos will be loaded dynamically -->
+      </div>
+
+      <div class="gallery-empty hidden" id="galleryEmpty">
+        <span class="empty-icon">📷</span>
+        <p>No photos in this category yet</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lightbox -->
+  <div class="lightbox hidden" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose">&times;</button>
+    <button class="lightbox-nav lightbox-prev" id="lightboxPrev">‹</button>
+    <button class="lightbox-nav lightbox-next" id="lightboxNext">›</button>
+    <div class="lightbox-content">
+      <img id="lightboxImage" src="" alt="Photo">
+    </div>
+    <div class="lightbox-info">
+      <span id="lightboxCounter">1 / 10</span>
+      <a href="#" class="btn btn-outline btn-sm" id="downloadBtn" download>Download</a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <span class="logo-icon">📸</span>
+          <span class="logo-text">Face Forward</span>
+        </div>
+        <p class="footer-text">
+          Capturing your precious moments, powered by AI.
+        </p>
+        <p class="footer-copyright">
+          © 2026 Wedding Face Forward. Made with ❤️
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+
+</html>

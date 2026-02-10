@@ -1,0 +1,14 @@
+{
+  "name": "wedding-face-forward",
+  "version": "1.0.0",
+  "description": "Wedding Photo Face Recognition - Guest Portal",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

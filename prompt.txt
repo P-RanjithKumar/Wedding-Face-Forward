@@ -1,0 +1,103 @@
+You are a senior software engineer. Build me a working local prototype on Windows 11 (laptop, CPU-only, no GPU) for Phase 2 of an event photo pipeline: once photos arrive in an Incoming/ folder, automatically preprocess them, detect faces, generate embeddings, cluster into persons, and then copy/link photos into per-person Solo/ and Group/ folders. This must be robust, resumable, and fast enough for about 5 photos/min typical, up to 20 photos/min peak. The reference design is: (1) ingest to Incoming, (2) processing service (faces→persons→grouping), (3) later upload/share, (4) later user enrollment + messaging. We are implementing only Phase 2 locally now. The system should follow the folder structure: EventRoot/Incoming/, EventRoot/Processed/, EventRoot/People/Person_###/{Solo,Group}/, EventRoot/Admin/. Also store metadata in SQLite (so restarts don’t reprocess). The Phase 2 logic is: convert RAW to JPEG + thumbnails, detect faces, compute embeddings, cluster into Person_A/Person_B identities, then assign each photo to Solo if one person is present, Group if multiple persons are present (and the same group photo should be placed into each person’s Group folder).
+
+Requirements
+Provide a complete repo structure with code that runs on Windows 11:
+
+Python project with pyproject.toml or requirements.txt
+
+A clear README.md with setup + run commands
+
+A .env.example for configuration
+
+One command to run the pipeline, e.g. python -m app.worker (or similar)
+
+Must work CPU-only:
+
+Use OpenCV + a CPU face detector and a CPU embedding model (recommend good options and pick one)
+
+Keep dependencies installable via pip on Windows
+
+Must be event-driven / near-real-time:
+
+Use a directory watcher (e.g., watchdog) to detect new files in Incoming/
+
+BUT also include a periodic scan fallback so if watcher misses events it still processes
+
+Must be resumable and idempotent:
+
+Use SQLite database (ship a schema + migrations or create-tables on first run)
+
+Track processing status per photo; never process the same file twice
+
+Use file hashing (SHA-1 or SHA-256) or a stable unique key (path + mtime + size) to dedupe
+
+Output rules:
+
+Save a normalized JPEG into Processed/ (even for input JPG)
+
+Generate a thumbnail JPEG too
+
+For each detected face: store bounding box, embedding vector, and assigned person_id in SQLite
+
+Create/update persons clusters incrementally
+
+Copy or hardlink the processed JPEG into:
+
+People/Person_###/Solo/ if the photo has exactly 1 unique person
+
+People/Person_###/Group/ if the photo has >=2 unique persons (copy/link into each person’s Group)
+
+Clustering approach:
+
+Implement incremental clustering with centroids:
+
+Maintain a centroid per person
+
+Assign new embedding to nearest centroid if distance < threshold else create new person
+
+Expose threshold as config in .env
+
+Store centroid vectors in SQLite or as a small local file
+
+Performance constraints:
+
+Must handle up to 20 photos/min peak on CPU by using a small worker pool (2–4 threads/processes)
+
+Avoid re-encoding repeatedly; cache results if possible
+
+Provide simple logging: per photo processing time, queue length, faces found
+
+RAW handling:
+
+If RAW files appear, convert them to JPEG using a reliable library or call out to a tool (but prefer pure Python). If pure Python RAW is too heavy on Windows, propose the best compromise and document it clearly.
+
+Provide code:
+
+config.py reading env vars (paths, thresholds, worker count)
+
+db.py with schema creation + basic queries
+
+watcher.py to enqueue jobs
+
+processor.py to do preprocess + face detect + embedding
+
+cluster.py incremental centroid clustering
+
+router.py to put photos into Solo/Group folders
+
+main.py or worker.py orchestration
+
+Testing / dry-run:
+
+Provide a “dry run” mode that only logs what it would do without copying files
+
+Provide one small unit test for clustering assignment and one for database idempotency
+
+Clarifications / assumptions you can make
+Input files in Incoming may be JPG/JPEG/PNG and sometimes RAW (CR2/NEF/ARW)
+
+If multiple faces in a photo, that photo belongs to Group for each person present
+
+If no faces detected, put the photo into Admin/NoFaces/
+
+If face detection fails or file is corrupt, move it into Admin/Errors/ and mark in DB

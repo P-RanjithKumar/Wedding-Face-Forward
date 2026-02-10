@@ -1,0 +1,30 @@
+1. Color Palette & Typography
+Your portfolio uses a sophisticated "Soft-Modern" palette that balances playfulness with professionalism.
+
+Base Colors:
+Cream (#F5F3F0): Used as a warm, high-end alternative to pure white.
+Dark (#1A1A1A): Used for high-contrast sections and deep backgrounds.
+Accent Colors: A curated set of pastels used for categories, pills, and glows:
+Soft Pink (#F4C2C2), Soft Purple (#B8A9D9), Soft Green (#A8D5BA), Soft Yellow (#F4D03F).
+Typography:
+Headings: DM Serif Display. It’s bold, elegant, and gives a "magazine" feel.
+Body: Inter. A clean, highly legible sans-serif that feels technical and modern.
+2. Layout & UI Patterns
+The Bento Grid: Used in your blog section. It’s perfect for HaloGallery to show a mix of featured photos, live stats (photos tagged), and guest access instructions.
+Stacking Sticky Cards: Used in your Projects section. This creates a sense of depth and progression as the user scrolls.
+Glassmorphism: Your navigation (nav-pill) uses backdrop-filter: blur(20px) and low-opacity borders. This makes elements feel like they are floating above the content.
+Dot Grid Backgrounds: A subtle radial-gradient dot pattern that adds texture without being distracting.
+3. Interaction Design (UX)
+This is where your portfolio stands out—using physics-based movement to make the UI feel "alive."
+
+Magnetic & Physics Pills: Your "Core Toolkit" skills move toward the mouse using JS-calculated 
+
+lerp
+ (linear interpolation). This "magnetic" feel makes the interface interactive and fun.
+Butter-Smooth Expansion: The "Award Pill" uses grid-template-rows: 0fr -> 1fr to expand smoothly when hovered.
+3D Stretchy Text: Your contact section uses character-level 3D rotation and stretching based on mouse proximity. It forces the user to pause and "play" with the link.
+Reveal Animations: The hero name uses clip-path and translateY to reveal text from hidden "slots," creating a very cinematic entry.
+4. Visual Flourishes
+Perspective Tunnels: Using multiple lines of scrolling marquee text at different opacities and speeds to create a sense of infinite background space.
+Animated Glows: Using box-shadows and blurred blobs (blob-1, blob-2) that slowly float in the background to prevent the page from feeling static.
+Micro-Interactions (Hover): Almost everything has a scale-105 or a subtle translateY(-2px) on hover, providing instant tactile feedback.

@@ -1,0 +1,38 @@
+# Bytes and bytecode
+__pycache__/
+*.py[cod]
+*.so
+
+# Environment Variables & Secrets
+.env
+credentials.json
+token.json
+client_secret.json
+service_account.json
+backend/service_account.json
+
+# Logs
+*.log
+logs.txt
+worker_crash.log
+
+# Database
+*.db
+*.sqlite3
+data/
+*.db-shm
+*.db-wal
+
+# Application Data / Media (Generated content)
+EventRoot/
+whatsapp_user_data/
+whatsapp_tool/whatsapp_user_data/
+whatsapp_tool/message_state_db.json
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
