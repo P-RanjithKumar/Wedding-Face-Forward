@@ -29,6 +29,9 @@ except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "customtkinter"])
     import customtkinter as ctk
 
+import tkinter as tk
+import math
+
 from app.config import get_config
 from app.db import get_db
 
@@ -204,9 +207,181 @@ class StatusSection(ctk.CTkFrame):
         ctk.CTkFrame(self, fg_color="transparent", height=10).pack()
 
 
+
 # =============================================================================
-# Activity Log Panel
+# Processing Widget (Animated)
 # =============================================================================
+class ProcessingWidget(ctk.CTkFrame):
+    """Animated processing status with visual feedback."""
+    
+    def __init__(self, parent):
+        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+        
+        self.title_label = ctk.CTkLabel(
+            self, text="Processing", font=("SF Pro Display", 15, "bold"),
+            text_color=COLORS["text_primary"], anchor="w"
+        )
+        self.title_label.pack(fill="x", padx=20, pady=(15, 10))
+        
+        # Canvas for animation
+        self.canvas_size = 140
+        self.canvas = ctk.CTkCanvas(
+            self, width=self.canvas_size, height=self.canvas_size,
+            bg=COLORS["bg_card"][0], highlightthickness=0
+        )
+        self.canvas.pack(pady=10)
+        
+        self.status_label = ctk.CTkLabel(
+            self, text="Idle", font=("SF Pro Display", 13),
+            text_color=COLORS["text_secondary"]
+        )
+        self.status_label.pack(pady=(0, 15))
+        
+        self._animating = False
+        self._angle = 0
+        self._mode = "light"  # Track mode for canvas bg
+        
+        self.draw_static_ring()
+
+    def set_appearance_mode(self, mode):
+        self._mode = mode.lower()
+        bg = COLORS["bg_card"][1] if self._mode == "dark" else COLORS["bg_card"][0]
+        self.canvas.configure(bg=bg)
+        self.draw_static_ring()
+
+    def draw_static_ring(self):
+        self.canvas.delete("all")
+        cx, cy = self.canvas_size / 2, self.canvas_size / 2
+        r = 50
+        # Draw base ring
+        color = "#3a3a3c" if self._mode == "dark" else "#e5e5e5"
+        self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r, outline=color, width=4)
+
+    def start_processing(self):
+        if not self._animating:
+            self._animating = True
+            self.status_label.configure(text="Processing...", text_color=COLORS["accent"])
+            self._animate()
+
+    def stop_processing(self):
+        self._animating = False
+        self.status_label.configure(text="Idle", text_color=COLORS["text_secondary"])
+        self.draw_static_ring()
+
+    def _animate(self):
+        if not self._animating:
+            return
+            
+        self.canvas.delete("all")
+        cx, cy = self.canvas_size / 2, self.canvas_size / 2
+        r = 50
+        
+        # Draw base ring
+        bg_color = "#3a3a3c" if self._mode == "dark" else "#e5e5e5"
+        self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r, outline=bg_color, width=4)
+        
+        # Draw rotating arc
+        start = self._angle
+        extent = 90
+        arc_color = COLORS["accent"][1] if self._mode == "dark" else COLORS["accent"][0]
+        self.canvas.create_arc(cx-r, cy-r, cx+r, cy+r, start=start, extent=extent, outline=arc_color, width=4, style="arc")
+        
+        # Pulse effect (inner circle)
+        pulse_r = r * (0.5 + 0.1 * math.sin(math.radians(self._angle * 2)))
+        fill_color = COLORS["accent"][1] if self._mode == "dark" else COLORS["accent"][0]
+        # Use stipple for transparency simulation if needed, or just solid small circle
+        self.canvas.create_oval(cx-pulse_r, cy-pulse_r, cx+pulse_r, cy+pulse_r, fill=fill_color, outline="")
+
+        self._angle = (self._angle + 10) % 360
+        self.after(50, self._animate)
+
+
+# =============================================================================
+# Cloud Widget (Animated)
+# =============================================================================
+class CloudWidget(ctk.CTkFrame):
+    """Animated cloud upload status."""
+    
+    def __init__(self, parent):
+        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+        
+        self.title_label = ctk.CTkLabel(
+            self, text="Cloud Sync", font=("SF Pro Display", 15, "bold"),
+            text_color=COLORS["text_primary"], anchor="w"
+        )
+        self.title_label.pack(fill="x", padx=20, pady=(15, 10))
+        
+        # Canvas
+        self.canvas_size = 140
+        self.canvas = ctk.CTkCanvas(
+            self, width=self.canvas_size, height=self.canvas_size,
+            bg=COLORS["bg_card"][0], highlightthickness=0
+        )
+        self.canvas.pack(pady=10)
+        
+        self.status_label = ctk.CTkLabel(
+            self, text="Synced", font=("SF Pro Display", 13),
+            text_color=COLORS["text_secondary"]
+        )
+        self.status_label.pack(pady=(0, 15))
+        
+        self._uploading = False
+        self._offset = 0
+        self._mode = "light"
+        
+        self.draw_static_cloud()
+
+    def set_appearance_mode(self, mode):
+        self._mode = mode.lower()
+        bg = COLORS["bg_card"][1] if self._mode == "dark" else COLORS["bg_card"][0]
+        self.canvas.configure(bg=bg)
+        if not self._uploading:
+            self.draw_static_cloud()
+
+    def draw_static_cloud(self):
+        self.canvas.delete("all")
+        self._draw_cloud_icon(offset=0, color=COLORS["text_secondary"][1] if self._mode == "dark" else COLORS["text_secondary"][0])
+
+    def start_uploading(self):
+        if not self._uploading:
+            self._uploading = True
+            self.status_label.configure(text="Uploading...", text_color=COLORS["accent"])
+            self._animate()
+
+    def stop_uploading(self):
+        if self._uploading:
+            self._uploading = False
+            self.status_label.configure(text="Synced", text_color=COLORS["success"])
+            self.draw_static_cloud()
+
+    def _draw_cloud_icon(self, offset=0, color="gray"):
+        cx, cy = self.canvas_size / 2, self.canvas_size / 2
+        
+        # Simple cloud shape (circles)
+        self.canvas.create_oval(cx-30, cy-10, cx+10, cy+20, fill=color, outline="")
+        self.canvas.create_oval(cx-10, cy-20, cx+30, cy+10, fill=color, outline="")
+        self.canvas.create_oval(cx+10, cy-10, cx+40, cy+20, fill=color, outline="")
+        self.canvas.create_oval(cx-20, cy+5, cx+30, cy+20, fill=color, outline="")
+        
+        # Arrow (if animating)
+        if self._uploading:
+            arrow_y = cy + 10 - offset
+            ac = COLORS["success"][1] if self._mode == "dark" else COLORS["success"][0]
+            self.canvas.create_line(cx, arrow_y, cx, arrow_y-20, width=3, fill=ac, capstyle="round")
+            self.canvas.create_line(cx, arrow_y-20, cx-8, arrow_y-12, width=3, fill=ac, capstyle="round")
+            self.canvas.create_line(cx, arrow_y-20, cx+8, arrow_y-12, width=3, fill=ac, capstyle="round")
+
+    def _animate(self):
+        if not self._uploading:
+            return
+            
+        self.canvas.delete("all")
+        cloud_color = COLORS["text_primary"][1] if self._mode == "dark" else COLORS["text_primary"][0]
+        self._draw_cloud_icon(offset=self._offset, color=cloud_color)
+        
+        self._offset = (self._offset + 2) % 20
+        self.after(50, self._animate)
+
 class ActivityLog(ctk.CTkFrame):
     """Simple scrollable log."""
     
@@ -228,20 +403,89 @@ class ActivityLog(ctk.CTkFrame):
         self.textbox.pack(fill="both", expand=True, padx=15, pady=(0, 15))
         self.textbox.configure(state="disabled")
         
-        self.messages = []
+        # Define tags for coloring
+        self.textbox.tag_config("proc", foreground="#5ac8fa")  # Light Blue
+        self.textbox.tag_config("db", foreground="#ffcc00")    # Yellow
+        self.textbox.tag_config("cloud", foreground="#af52de") # Purple
+        self.textbox.tag_config("whatsapp", foreground="#34c759") # Green
+        self.textbox.tag_config("server", foreground="#007aff") # Blue
+        self.textbox.tag_config("error", foreground="#ff3b30") # Red
+        self.textbox.tag_config("timestamp", foreground=COLORS["text_secondary"][0])
     
     def add_log(self, message: str, level: str = "info"):
         timestamp = datetime.now().strftime("%H:%M:%S")
-        icons = {"success": "✓", "warning": "!", "error": "✗", "info": "•"}
-        icon = icons.get(level, "•")
         
-        self.messages.insert(0, f"{timestamp}  {icon}  {message}")
-        if len(self.messages) > 50:
-            self.messages = self.messages[:50]
+        # Default icon/style
+        icon = "•"
+        tag = "info"
+        display_msg = message
+
+        # Parse source and assign icon
+        # Message format usually: "[Source] Content" or "[Source] Logger | Content"
+        lower_msg = message.lower()
+        
+        if "app.processor" in lower_msg or "processing" in lower_msg:
+            icon = "⚙️" # Gear
+            tag = "proc"
+            # Clean up message for cleaner display
+            display_msg = message.replace("app.processor |", "").strip()
+            if display_msg.startswith("[Worker]"): display_msg = display_msg.replace("[Worker]", "").strip()
+            display_msg = f"Processor | {display_msg}"
+            
+        elif "app.db" in lower_msg or "database" in lower_msg:
+            icon = "🗄️" # File Cabinet
+            tag = "db"
+            display_msg = message.replace("app.db |", "").strip()
+            if display_msg.startswith("[Worker]"): display_msg = display_msg.replace("[Worker]", "").strip()
+            display_msg = f"Database | {display_msg}"
+            
+        elif "app.cloud" in lower_msg or "drive" in lower_msg:
+            icon = "☁️" # Cloud
+            tag = "cloud"
+            display_msg = message.replace("app.cloud |", "").strip()
+            if display_msg.startswith("[Worker]"): display_msg = display_msg.replace("[Worker]", "").strip()
+            display_msg = f"Cloud | {display_msg}"
+            
+        elif "whatsapp" in lower_msg:
+            icon = "💬" # Speech Balloon
+            tag = "whatsapp"
+            if display_msg.startswith("[WhatsApp]"): display_msg = display_msg.replace("[WhatsApp]", "").strip()
+            display_msg = f"WhatsApp | {display_msg}"
+            
+        elif "server" in lower_msg:
+            icon = "🌐" # Globe
+            tag = "server"
+            if display_msg.startswith("[Server]"): display_msg = display_msg.replace("[Server]", "").strip()
+            display_msg = f"Server | {display_msg}"
+            
+        elif level == "error":
+            icon = "✗"
+            tag = "error"
+        elif level == "success":
+            icon = "✓"
+            tag = "whatsapp" # Use green for success generally
+
+        self.textbox.configure(state="normal")
         
         self.textbox.configure(state="normal")
-        self.textbox.delete("1.0", "end")
-        self.textbox.insert("1.0", "\n".join(self.messages))
+        
+        # Insert message in default color first at the top
+        self.textbox.insert("1.0", f"{display_msg}\n")
+        
+        # Then insert the colored prefix at the very beginning (pushing the message to the right)
+        prefix = f"{timestamp}  {icon}  "
+        self.textbox.insert("1.0", prefix, (tag,))
+        
+        
+        # Keep limit ~50 lines
+        try:
+            # int(self.textbox.index('end-1c').split('.')[0]) gives line count
+            line_count = int(self.textbox.index('end-1c').split('.')[0])
+            if line_count > 50:
+                self.textbox.delete("51.0", "end")
+        except:
+            pass
+            
         self.textbox.configure(state="disabled")
 
 
@@ -255,29 +499,101 @@ class PeopleList(ctk.CTkScrollableFrame):
         super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12)
         self._last_hash = None
     
+
     def update_persons(self, persons: list, enrollments: dict):
+        # We need to detect specific changes to highlight them
+        current_counts = {}
+        for p in persons:
+            name = enrollments.get(p.id).user_name if p.id in enrollments else p.name
+            current_counts[name] = p.face_count
+
+        # Check for changes if we have history
+        changes = []
+        if hasattr(self, "_last_counts"):
+            for name, count in current_counts.items():
+                old_count = self._last_counts.get(name, 0)
+                if count > old_count:
+                    changes.append(name)
+        
+        self._last_counts = current_counts
+
+        # Check if we need to rebuild the layout
         data_hash = str([(p.id, p.name, p.face_count) for p in persons])
         if data_hash == self._last_hash:
-            return
-        self._last_hash = data_hash
-        
-        for w in self.winfo_children():
-            w.destroy()
-        
-        if not persons:
-            ctk.CTkLabel(self, text="No people detected yet", font=("SF Pro Display", 13), text_color=COLORS["text_secondary"]).pack(pady=20)
-            return
-        
-        for person in persons:
-            enrollment = enrollments.get(person.id)
-            name = enrollment.user_name if enrollment else person.name
-            icon = "✓ " if enrollment else ""
+            # Even if hash matches (unlikely if counts changed), we might still want to highlight if we missed it?
+            # Actually, if count changed, hash changed.
+            pass
+        else:
+            self._last_hash = data_hash
             
-            row = ctk.CTkFrame(self, fg_color="transparent")
-            row.pack(fill="x", padx=5, pady=2)
+            for w in self.winfo_children():
+                w.destroy()
             
-            ctk.CTkLabel(row, text=f"{icon}{name}", font=("SF Pro Display", 13), text_color=COLORS["text_primary"]).pack(side="left")
-            ctk.CTkLabel(row, text=f"{person.face_count} photos", font=("SF Pro Display", 12), text_color=COLORS["text_secondary"]).pack(side="right")
+            if not persons:
+                ctk.CTkLabel(self, text="No people detected yet", font=("SF Pro Display", 13), text_color=COLORS["text_secondary"]).pack(pady=20)
+                return
+            
+            for person in persons:
+                enrollment = enrollments.get(person.id)
+                name = enrollment.user_name if enrollment else person.name
+                icon = "✓ " if enrollment else ""
+                
+                row = ctk.CTkFrame(self, fg_color="transparent")
+                row.pack(fill="x", padx=5, pady=2)
+                
+                ctk.CTkLabel(row, text=f"{icon}{name}", font=("SF Pro Display", 13), text_color=COLORS["text_primary"]).pack(side="left")
+                ctk.CTkLabel(row, text=f"{person.face_count} photos", font=("SF Pro Display", 12), text_color=COLORS["text_secondary"]).pack(side="right")
+        
+        # Trigger highlights for changes
+        for name in changes:
+            self.highlight_person(name)
+    
+    def highlight_person(self, name_to_find):
+        """Find and highlight a person in the list."""
+        # Normalize search name
+        search = name_to_find.lower().strip()
+        found_widget = None
+        
+        # Search through children rows
+        for row in self.winfo_children():
+            # The structure is Frame -> [Label(name), Label(count)]
+            # We need to access the name label
+            children = row.winfo_children()
+            if not children: continue
+            
+            # First child is the name label (usually)
+            name_lbl = children[0]
+            if not isinstance(name_lbl, ctk.CTkLabel): continue
+            
+            # Check text
+            txt = name_lbl.cget("text").lower()
+            # Remove "✓ " prefix if present
+            if txt.startswith("✓ "): txt = txt[2:]
+            
+            if search in txt:
+                found_widget = row
+                break
+        
+        if found_widget:
+            # Flash animation
+            orig_color = found_widget.cget("fg_color")
+            flash_color = COLORS["accent"]
+            
+            def flash(step):
+                if step > 5:
+                    found_widget.configure(fg_color="transparent") # Reset
+                    return
+                # Toggle
+                c = flash_color if step % 2 == 0 else "transparent"
+                found_widget.configure(fg_color=c)
+                self.after(200, lambda: flash(step + 1))
+            
+            flash(0)
+            
+            # Scroll to make visible (rudimentary)
+            # CTkScrollableFrame doesn't expose easy 'scroll_to' for arbitrary widgets easily 
+            # without accessing internal canvas. 
+            # We'll just highlight for now.
 
 
 # =============================================================================
@@ -381,8 +697,9 @@ class ProcessManager:
                             # Extract message after timestamp
                             parts = line.split("|", 2)
                             if len(parts) >= 3:
+                                logger = parts[1].strip()
                                 msg = parts[-1].strip()
-                                self.on_output(f"[{name}] {msg}", "info")
+                                self.on_output(f"[{name}] {logger} | {msg}", "info")
                             else:
                                 self.on_output(f"[{name}] {line}", "info")
                         else:
@@ -519,38 +836,55 @@ class WeddingFFApp(ctk.CTk):
         self.enrolled_card = StatCard(stats_frame, "Enrolled", "0", COLORS["accent"])
         self.enrolled_card.grid(row=0, column=3, padx=(8, 0), sticky="nsew")
         
-        # Main Content
-        content = ctk.CTkFrame(self, fg_color="transparent")
-        content.pack(fill="both", expand=True, padx=30, pady=(0, 15))
-        content.columnconfigure(0, weight=1)
-        content.columnconfigure(1, weight=1)
-        content.rowconfigure(0, weight=1)
+        # Main Content - Modular Layout with PanedWindow
+        # We need a container for the PanedWindow that respects CTk geometry
+        container = ctk.CTkFrame(self, fg_color="transparent")
+        container.pack(fill="both", expand=True, padx=30, pady=(0, 15))
         
-        # Left: Status Sections
-        left = ctk.CTkFrame(content, fg_color="transparent")
-        left.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        # Use tkinter.PanedWindow for resizability
+        # We must align bg color with theme. 
+        # Note: 'bg' in PanedWindow doesn't update automatically on theme change easily without recreation/config.
+        # We'll set a neutral or match light mode initially, and update in _toggle_theme.
+        self.paned_window = tk.PanedWindow(
+            container, orient="horizontal", 
+            sashwidth=6, sashrelief="flat",
+            bg=COLORS["bg"][0], # Initial light mode bg
+            bd=0
+        )
+        self.paned_window.pack(fill="both", expand=True)
+
+        # --- LEFT PANE (Operations) ---
+        self.left_pane = ctk.CTkFrame(self.paned_window, fg_color="transparent")
+        # No pack/grid here, paned_window manages it
         
-        self.queue_section = StatusSection(left, "Processing")
-        self.queue_section.add_row("incoming", "Incoming", "0")
-        self.queue_section.add_row("processing", "Processing", "Idle")
-        self.queue_section.add_row("completed", "Completed", "0")
-        self.queue_section.add_row("errors", "Errors", "0")
-        self.queue_section.add_padding()
-        self.queue_section.pack(fill="x", pady=(0, 10))
+        # Top Left: Status Modules (Processing & Cloud)
+        # We'll put these in a sub-frame
+        status_modules = ctk.CTkFrame(self.left_pane, fg_color="transparent")
+        status_modules.pack(fill="x", pady=(0, 10))
+        status_modules.columnconfigure(0, weight=1)
+        status_modules.columnconfigure(1, weight=1)
         
-        self.cloud_section = StatusSection(left, "Cloud Sync")
-        self.cloud_section.add_row("pending", "Pending", "0")
-        self.cloud_section.add_row("uploading", "Uploading", "0")
-        self.cloud_section.add_row("uploaded", "Uploaded", "0")
-        self.cloud_section.add_row("failed", "Failed", "0")
-        self.cloud_section.add_padding()
-        self.cloud_section.pack(fill="x")
+        self.proc_widget = ProcessingWidget(status_modules)
+        self.proc_widget.grid(row=0, column=0, padx=(0, 5), sticky="ew")
         
-        # Right: People
-        right = ctk.CTkFrame(content, fg_color="transparent")
-        right.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
+        self.cloud_widget = CloudWidget(status_modules)
+        self.cloud_widget.grid(row=0, column=1, padx=(5, 0), sticky="ew")
+
+        # Activity Log (Below status modules)
+        self.activity_log = ActivityLog(self.left_pane)
+        self.activity_log.pack(fill="both", expand=True)
+        self.activity_log.add_log("App started", "success")
         
-        people_header = ctk.CTkFrame(right, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+        # Add Left Pane to PanedWindow
+        # We can't add CTk widgets directly to PanedWindow easily because they anticipate pack/grid geometry managers usually?
+        # Actually standard tkinter widgets work. CTkFrame is a subclass of Frame (usually).
+        # Let's try adding directly.
+        self.paned_window.add(self.left_pane, minsize=300)
+
+        # --- RIGHT PANE (Data/People) ---
+        self.right_pane = ctk.CTkFrame(self.paned_window, fg_color="transparent")
+        
+        people_header = ctk.CTkFrame(self.right_pane, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
         people_header.pack(fill="both", expand=True)
         
         ctk.CTkLabel(people_header, text="People", font=("SF Pro Display", 15, "bold"), text_color=COLORS["text_primary"]).pack(anchor="w", padx=20, pady=(15, 10))
@@ -558,11 +892,12 @@ class WeddingFFApp(ctk.CTk):
         self.people_list = PeopleList(people_header)
         self.people_list.pack(fill="both", expand=True, padx=15, pady=(0, 15))
         
-        # Activity Log
-        self.activity_log = ActivityLog(self)
-        self.activity_log.pack(fill="x", padx=30, pady=(0, 25))
+        self.paned_window.add(self.right_pane, minsize=300)
         
-        self.activity_log.add_log("App started", "success")
+    def _update_paned_window_bg(self):
+        mode = ctk.get_appearance_mode()
+        bg = COLORS["bg"][1] if mode == "Dark" else COLORS["bg"][0]
+        self.paned_window.configure(bg=bg)
     
     def _toggle_system(self):
         """Start or stop the system."""
@@ -656,10 +991,17 @@ class WeddingFFApp(ctk.CTk):
             if self.config.incoming_dir.exists():
                 incoming = len([f for f in self.config.incoming_dir.iterdir() if f.is_file() and f.suffix.lower() in self.config.supported_extensions])
             
-            self.queue_section.update_row("incoming", str(incoming))
-            self.queue_section.update_row("processing", f"{processing}..." if processing else "Idle")
-            self.queue_section.update_row("completed", str(completed))
-            self.queue_section.update_row("errors", str(errors))
+            self.proc_widget.status_label.configure(text=f"Queue: {incoming}")
+
+            if processing > 0:
+                self.proc_widget.start_processing()
+                self.proc_widget.status_label.configure(text=f"Processing {processing}...")
+            else:
+                self.proc_widget.stop_processing()
+                if incoming > 0:
+                    self.proc_widget.status_label.configure(text="Waiting...", text_color=COLORS["warning"])
+            # self.queue_section.update_row("completed", str(completed))
+            # self.queue_section.update_row("errors", str(errors))
             
             # Get upload stats with unique photo count
             upload_stats = db.get_upload_stats_unique()
@@ -674,14 +1016,21 @@ class WeddingFFApp(ctk.CTk):
                 failed_total = by_status.get('failed', 0)
                 completed_unique = unique_by_status.get('completed', 0)
                 
-                self.cloud_section.update_row("pending", str(pending_total))
-                self.cloud_section.update_row("uploading", str(uploading_total))
-                # Show unique photos / total files for clarity when different
-                if completed_unique != completed_total:
-                    self.cloud_section.update_row("uploaded", f"{completed_unique} ({completed_total})")
+                if uploading_total > 0:
+                    self.cloud_widget.start_uploading()
+                    self.cloud_widget.status_label.configure(text=f"Uploading {uploading_total}...")
                 else:
-                    self.cloud_section.update_row("uploaded", str(completed_total))
-                self.cloud_section.update_row("failed", str(failed_total))
+                    self.cloud_widget.stop_uploading()
+                    self.cloud_widget.status_label.configure(text="Synced")
+
+                # self.cloud_section.update_row("pending", str(pending_total))
+                # self.cloud_section.update_row("uploading", str(uploading_total))
+                # Show unique photos / total files for clarity when different
+                # if completed_unique != completed_total:
+                #     self.cloud_section.update_row("uploaded", f"{completed_unique} ({completed_total})")
+                # else:
+                #     self.cloud_section.update_row("uploaded", str(completed_total))
+                # self.cloud_section.update_row("failed", str(failed_total))
                 self.last_upload_stats = upload_stats
             
             if total > self.last_photo_count:
@@ -689,7 +1038,15 @@ class WeddingFFApp(ctk.CTk):
             if stats.get("total_faces", 0) > self.last_face_count:
                 self.activity_log.add_log(f"{stats['total_faces'] - self.last_face_count} face(s) detected", "success")
             if stats.get("total_persons", 0) > self.last_person_count:
-                self.activity_log.add_log(f"New person identified", "success")
+                # New person identified
+                new_count = stats.get("total_persons", 0) - self.last_person_count
+                self.activity_log.add_log(f"{new_count} New person(s) identified", "success")
+                
+                # Try to highlight new people if we can find them in the logs or list
+                # Since we don't have the exact name here easily without querying DB diffs, 
+                # we'll just flash the list or log.
+                # Ideally, we should fetch the latest person added.
+                pass
             
             self.last_photo_count = total
             self.last_face_count = stats.get("total_faces", 0)
@@ -711,6 +1068,9 @@ class WeddingFFApp(ctk.CTk):
         curr = ctk.get_appearance_mode()
         new_mode = "Dark" if curr == "Light" else "Light"
         ctk.set_appearance_mode(new_mode)
+        self._update_paned_window_bg()
+        self.proc_widget.set_appearance_mode(new_mode)
+        self.cloud_widget.set_appearance_mode(new_mode)
 
     def _on_close(self):
         """Handle window close - also stop services."""

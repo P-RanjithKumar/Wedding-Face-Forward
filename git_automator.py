@@ -115,49 +115,60 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.log_output)
 
     def _apply_styles(self):
+        # Using a modern, neutral palette. 
+        # Less contrast, more "native" but clean feel.
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #f5f5f7;
+                background-color: #ffffff;
+            }
+            QWidget {
+                font-family: "Segoe UI", sans-serif;
+                font-size: 13px;
+                color: #333333;
             }
             QLabel#header {
-                font-size: 24px;
-                font-weight: bold;
-                color: #1d1d1f;
+                font-size: 18px;
+                font-weight: 600;
+                color: #111111;
+                margin-bottom: 5px;
             }
             QLineEdit {
-                border: 1px solid #d2d2d7;
-                border-radius: 8px;
-                padding: 5px 10px;
-                font-size: 14px;
-                background-color: #ffffff;
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                padding: 8px;
+                background-color: #fafafa;
+                selection-background-color: #e0e0e0;
             }
             QLineEdit:focus {
-                border: 2px solid #007aff;
+                border: 1px solid #999999;
+                background-color: #ffffff;
             }
             QPushButton {
-                background-color: #007aff;
-                color: white;
+                background-color: #333333;
+                color: #ffffff;
                 border: none;
-                border-radius: 10px;
-                font-size: 16px;
-                font-weight: bold;
+                border-radius: 6px;
+                padding: 10px;
+                font-weight: 600;
             }
             QPushButton:hover {
-                background-color: #006add;
+                background-color: #444444;
             }
             QPushButton:pressed {
-                background-color: #005bb5;
+                background-color: #222222;
             }
             QPushButton:disabled {
-                background-color: #99c7ff;
+                background-color: #cccccc;
+                color: #888888;
             }
             QTextEdit {
-                border: 1px solid #d2d2d7;
-                border-radius: 8px;
-                background-color: #ffffff;
-                font-family: 'Consolas', 'Monaco', monospace;
+                border: 1px solid #eaeaea;
+                border-radius: 6px;
+                background-color: #fafafa;
+                font-family: "Consolas", monospace;
                 font-size: 12px;
-                color: #333;
+                color: #444444;
+                padding: 5px;
             }
         """)
 
