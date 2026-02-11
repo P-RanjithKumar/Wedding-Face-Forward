@@ -5,6 +5,8 @@ Handles uploading processed photos to Google Drive.
 
 import logging
 import os
+import ssl
+import threading
 import time
 from pathlib import Path
 from typing import Optional, Dict
@@ -36,7 +38,7 @@ def retry_with_backoff(max_retries: int = 3, initial_delay: int = 2):
             for attempt in range(max_retries):
                 try:
                     return func(*args, **kwargs)
-                except (HttpError, TimeoutError, OSError) as e:
+                except (HttpError, TimeoutError, OSError, ssl.SSLError, ConnectionError) as e:
                     last_exception = e
                     error_msg = str(e)
                     
@@ -49,7 +51,7 @@ def retry_with_backoff(max_retries: int = 3, initial_delay: int = 2):
                     if attempt < max_retries - 1:
                         logger.warning(f"Attempt {attempt + 1} failed: {error_msg}. Retrying in {delay}s...")
                         time.sleep(delay)
-                        delay *= 2  # Exponential backoff
+                        delay = min(delay * 2, 16)  # Exponential backoff, capped at 16s
                     else:
                         logger.error(f"All {max_retries} attempts failed: {error_msg}")
             
@@ -67,6 +69,7 @@ class CloudManager:
         self.service = None
         self.root_folder_id = self.config.drive_root_folder_id
         self._folder_cache: Dict[str, str] = {}  # Cache path -> folder_id
+        self._folder_lock = threading.Lock()  # Thread-safe folder creation
         
         self.initialize()
 
@@ -149,6 +152,12 @@ class CloudManager:
         results = self.service.files().list(
             q=query, fields="files(id, name)", pageSize=1
         ).execute()
+        
+        # Validate response is a dict (can be malformed during network issues)
+        if not isinstance(results, dict):
+            logger.warning(f"Unexpected API response type for _find_folder: {type(results)}")
+            return None
+        
         items = results.get('files', [])
         return items[0]['id'] if items else None
 
@@ -229,15 +238,31 @@ class CloudManager:
             logger.info(f"[DRY RUN] Would create cloud folder: {name}")
             return "dry_run_folder_id"
 
-        file = self.service.files().create(
+        result = self.service.files().create(
             body=metadata, fields='id'
         ).execute()
-        logger.info(f"Created cloud folder: {name} ({file.get('id')})")
-        return file.get('id')
+        
+        # Validate response is a dict (can be malformed during network issues)
+        if not isinstance(result, dict):
+            logger.error(f"Unexpected API response type for _create_folder('{name}'): {type(result)}")
+            return None
+        
+        folder_id = result.get('id')
+        if not folder_id:
+            logger.error(f"API response missing 'id' for _create_folder('{name}'): {result}")
+            return None
+        
+        logger.info(f"Created cloud folder: {name} ({folder_id})")
+        return folder_id
 
     def ensure_folder_path(self, path_parts: list[str]) -> Optional[str]:
         """
         Ensure a folder hierarchy exists in Drive.
+        
+        Thread-safe: uses a lock to prevent race conditions where multiple
+        threads could create duplicate folders simultaneously. The lock is
+        only held briefly for cache operations, NOT during network calls,
+        to prevent one thread's network retries from blocking all others.
         
         Args:
             path_parts: List of folder names, e.g. ["People", "Person_123", "Solo"]
@@ -248,7 +273,7 @@ class CloudManager:
         if not self.is_enabled:
             return None
 
-        # Check cache string "root/part1/part2"
+        # Check cache without lock first (fast path, read-only)
         cache_key = "/".join(path_parts)
         if cache_key in self._folder_cache:
             return self._folder_cache[cache_key]
@@ -260,20 +285,59 @@ class CloudManager:
             # Build up key for partial cache check
             current_path_str = f"{current_path_str}/{part}" if current_path_str else part
             
+            # Quick cache check (no lock needed for reads)
             if current_path_str in self._folder_cache:
                 current_parent_id = self._folder_cache[current_path_str]
                 continue
             
-            # Find or create
-            folder_id = self._find_folder(part, current_parent_id)
-            if not folder_id:
-                folder_id = self._create_folder(part, current_parent_id)
+            # Acquire lock ONLY for the find-or-create of this single level.
+            # This prevents duplicate folder creation while keeping the lock
+            # duration short — if the network call fails/retries, other threads
+            # working on different folders are NOT blocked.
+            acquired = self._folder_lock.acquire(timeout=30)
+            if not acquired:
+                logger.error(f"Timeout waiting for folder lock (path: {current_path_str})")
+                return None
+            
+            try:
+                # Double-check cache after acquiring lock
+                if current_path_str in self._folder_cache:
+                    current_parent_id = self._folder_cache[current_path_str]
+                    continue
                 
-            if not folder_id:
-                return None  # Failed at this level
+                # Release lock BEFORE network calls to avoid blocking other threads
+                # during retries. We save parent_id for the network call.
+                parent_for_lookup = current_parent_id
+            finally:
+                self._folder_lock.release()
+            
+            # Network calls happen OUTSIDE the lock
+            try:
+                folder_id = self._find_folder(part, parent_for_lookup)
+                if not folder_id:
+                    # Need to create — re-acquire lock briefly to prevent duplicates
+                    with self._folder_lock:
+                        # Check cache again (another thread may have created it)
+                        if current_path_str in self._folder_cache:
+                            current_parent_id = self._folder_cache[current_path_str]
+                            continue
+                    
+                    # Create outside the lock
+                    folder_id = self._create_folder(part, parent_for_lookup)
+                    
+                    if not folder_id:
+                        logger.error(f"Failed to create cloud folder: {part} (parent: {parent_for_lookup})")
+                        return None
                 
-            current_parent_id = folder_id
-            self._folder_cache[current_path_str] = folder_id
+                # Update cache with lock
+                with self._folder_lock:
+                    self._folder_cache[current_path_str] = folder_id
+                
+                current_parent_id = folder_id
+                
+            except Exception as e:
+                logger.error(f"Error ensuring cloud folder '{part}': {e}")
+                return None
 
         return current_parent_id
 
@@ -314,29 +378,42 @@ class CloudManager:
                 logger.info(f"File already exists in cloud: {local_path.name}, skipping.")
                 return True
 
-            # Upload
-            file_metadata = {
-                'name': local_path.name,
-                'parents': [parent_folder_id]
-            }
-            media = MediaFileUpload(
-                str(local_path),
-                mimetype='image/jpeg',
-                resumable=True
-            )
-            
-            file = self.service.files().create(
-                body=file_metadata,
-                media_body=media,
-                fields='id'
-            ).execute()
-            
-            logger.info(f"Uploaded to cloud: {local_path.name} ({file.get('id')})")
-            return True
+            # Upload with retry logic for transient network/SSL errors
+            return self._upload_file_with_retry(local_path, parent_folder_id)
 
         except Exception as e:
             logger.error(f"Failed to upload {local_path.name}: {e}")
             return False
+
+    @retry_with_backoff(max_retries=3, initial_delay=2)
+    def _upload_file_with_retry(self, local_path: Path, parent_folder_id: str) -> bool:
+        """Perform the actual file upload with retry on transient errors."""
+        file_metadata = {
+            'name': local_path.name,
+            'parents': [parent_folder_id]
+        }
+        media = MediaFileUpload(
+            str(local_path),
+            mimetype='image/jpeg',
+            resumable=True
+        )
+        
+        result = self.service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        
+        # Validate response
+        if not isinstance(result, dict):
+            raise OSError(f"Unexpected API response type during upload: {type(result)}")
+        
+        file_id = result.get('id')
+        if not file_id:
+            raise OSError(f"API response missing 'id' during upload: {result}")
+        
+        logger.info(f"Uploaded to cloud: {local_path.name} ({file_id})")
+        return True
 
     def get_folder_link(self, folder_id: str) -> Optional[str]:
         """Get web link for a folder."""

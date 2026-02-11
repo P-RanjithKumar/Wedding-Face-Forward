@@ -477,15 +477,8 @@ class ActivityLog(ctk.CTkFrame):
         self.textbox.insert("1.0", prefix, (tag,))
         
         
-        # Keep limit ~50 lines
-        try:
-            # int(self.textbox.index('end-1c').split('.')[0]) gives line count
-            line_count = int(self.textbox.index('end-1c').split('.')[0])
-            if line_count > 50:
-                self.textbox.delete("51.0", "end")
-        except:
-            pass
-            
+        # No line limit - keep all logs for full history
+        
         self.textbox.configure(state="disabled")
 
 
@@ -767,6 +760,21 @@ class WeddingFFApp(ctk.CTk):
         self.last_person_count = 0
         self.last_upload_stats = {}
         
+        # Create timestamped session log file in logs/ directory
+        logs_dir = BASE_DIR / "logs"
+        logs_dir.mkdir(exist_ok=True)  # Create logs directory if it doesn't exist
+        
+        session_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.session_log_path = logs_dir / f"session_{session_timestamp}.txt"
+        try:
+            self.session_log_file = open(self.session_log_path, 'w', encoding='utf-8', buffering=1)  # Line buffering
+            self.session_log_file.write(f"=== Wedding Face Forward Session Log ===\n")
+            self.session_log_file.write(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            self.session_log_file.write(f"=" * 50 + "\n\n")
+        except Exception as e:
+            print(f"Warning: Could not create session log file: {e}")
+            self.session_log_file = None
+        
         self._create_ui()
         
         # Create process manager with output callback
@@ -779,7 +787,16 @@ class WeddingFFApp(ctk.CTk):
     
     def _on_worker_output(self, message, level):
         """Handle output from worker/server processes."""
+        # Add to UI
         self.after(0, lambda: self.activity_log.add_log(message, level))
+        
+        # Write to session log file
+        if self.session_log_file:
+            try:
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                self.session_log_file.write(f"{timestamp}  •  {message}\n")
+            except Exception as e:
+                print(f"Warning: Could not write to session log: {e}")
     
     def _create_ui(self):
         # Header
@@ -1077,6 +1094,16 @@ class WeddingFFApp(ctk.CTk):
         if self.process_manager.is_running():
             self.activity_log.add_log("Shutting down...", "info")
             self.process_manager.stop()
+        
+        # Close session log file
+        if hasattr(self, 'session_log_file') and self.session_log_file:
+            try:
+                self.session_log_file.write(f"\n{'=' * 50}\n")
+                self.session_log_file.write(f"Ended: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                self.session_log_file.close()
+            except Exception as e:
+                print(f"Warning: Could not close session log: {e}")
+        
         self.running = False
         self.destroy()
 

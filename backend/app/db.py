@@ -700,6 +700,61 @@ class Database:
             )
             return cursor.rowcount
     
+    @retry_on_lock()
+    def reset_stuck_uploads(self, timeout_minutes: int = 5) -> int:
+        """Reset uploads stuck in 'uploading' status back to 'pending'.
+        
+        Uploads in 'uploading' status for longer than timeout_minutes are
+        considered stuck (e.g. from crashes, network hangs).
+        
+        Args:
+            timeout_minutes: How long an upload can be in 'uploading' before
+                           it's considered stuck.
+        Returns:
+            Number of uploads reset.
+        """
+        conn = self.connect()
+        with conn:
+            cursor = conn.execute(
+                """UPDATE upload_queue 
+                   SET status = 'pending', last_error = 'Reset: stuck in uploading', updated_at = ?
+                   WHERE status = 'uploading' 
+                     AND updated_at < datetime('now', ? || ' minutes')""",
+                (datetime.now(), f"-{timeout_minutes}")
+            )
+            return cursor.rowcount
+    
+    @retry_on_lock()
+    def reset_stuck_processing_live(self, timeout_minutes: int = 10) -> int:
+        """Reset photos stuck in 'processing' status back to 'pending' during live operation.
+        
+        Unlike _reset_stuck_processing (which runs at startup), this uses
+        a time-based check to only reset photos that have been processing
+        for longer than expected (avoids resetting legitimately processing photos).
+        
+        Args:
+            timeout_minutes: How long a photo can be in 'processing' before
+                           it's considered stuck.
+        Returns:
+            Number of photos reset.
+        """
+        conn = self.connect()
+        with conn:
+            # Use processed_at or created_at to check staleness
+            # Photos in 'processing' have processed_at = NULL, so use created_at
+            cursor = conn.execute(
+                """UPDATE photos 
+                   SET status = 'pending'
+                   WHERE status = 'processing' 
+                     AND created_at < datetime('now', ? || ' minutes')""",
+                (f"-{timeout_minutes}",)
+            )
+            count = cursor.rowcount
+        
+        if count > 0:
+            logger.warning(f"Reset {count} photo(s) stuck in 'processing' for >{timeout_minutes}min back to 'pending'")
+        return count
+    
     # =========================================================================
     # Statistics
     # =========================================================================

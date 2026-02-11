@@ -292,14 +292,25 @@ def main():
         
         try:
             # Main loop - wait for shutdown
+            main_loop_count = 0
             while not shutdown_event.is_set():
                 time.sleep(5)
+                main_loop_count += 1
                 
                 # Print stats periodically
                 if not shutdown_event.is_set():
                     queue_size = job_queue.qsize()
                     if queue_size > 0:
                         logger.info(f"Queue size: {queue_size}")
+                
+                # Periodically check for stuck processing photos (~every 2 minutes)
+                if main_loop_count % 24 == 0:
+                    try:
+                        stuck_count = db.reset_stuck_processing_live(timeout_minutes=10)
+                        if stuck_count > 0:
+                            logger.warning(f"Recovered {stuck_count} stuck processing photo(s)")
+                    except Exception as e:
+                        logger.error(f"Failed to check for stuck processing: {e}")
                         
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt received")

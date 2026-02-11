@@ -78,6 +78,10 @@ class UploadQueueManager:
         """Main worker loop that processes the upload queue."""
         logger.info("Upload queue worker loop started")
         
+        # Recover any uploads stuck in 'uploading' from previous crash/hang
+        self._recover_stuck_uploads()
+        
+        iteration_count = 0
         while not self._stop_event.is_set():
             try:
                 # Process pending uploads
@@ -85,6 +89,11 @@ class UploadQueueManager:
                 
                 # Retry failed uploads
                 self._retry_failed_uploads()
+                
+                # Periodically check for stuck uploads (every ~60 seconds)
+                iteration_count += 1
+                if iteration_count % 30 == 0:
+                    self._recover_stuck_uploads()
                 
                 # Sleep before next iteration (2 seconds for near real-time sync)
                 self._stop_event.wait(timeout=2)
@@ -123,9 +132,11 @@ class UploadQueueManager:
             if self._stop_event.is_set():
                 break
             
-            # Wait before retry based on retry count
+            # Wait before retry based on retry count (uses stop_event so shutdown isn't blocked)
             retry_delay = self.config.upload_retry_delay * (2 ** upload['retry_count'])
-            time.sleep(min(retry_delay, 60))  # Cap at 60 seconds
+            self._stop_event.wait(timeout=min(retry_delay, 60))  # Cap at 60 seconds
+            if self._stop_event.is_set():
+                break
             
             self._upload_file(upload)
     
@@ -138,7 +149,22 @@ class UploadQueueManager:
         # Check if file still exists
         if not local_path.exists():
             logger.warning(f"Upload {upload_id}: File no longer exists: {local_path}")
-            self.db.update_upload_status(upload_id, 'failed', error='File not found')
+            # Set retry_count to max so this won't be retried (file is permanently gone)
+            self.db.update_upload_status(
+                upload_id, 'failed', 
+                error='File not found',
+                increment_retry=False
+            )
+            # Manually set retry_count to max to prevent retries
+            try:
+                conn = self.db.connect()
+                with conn:
+                    conn.execute(
+                        "UPDATE upload_queue SET retry_count = ? WHERE id = ?",
+                        (self.config.upload_max_retries, upload_id)
+                    )
+            except Exception as e:
+                logger.error(f"Failed to update retry_count for missing file: {e}")
             return
         
         try:
@@ -168,6 +194,20 @@ class UploadQueueManager:
                 increment_retry=True
             )
             logger.error(f"Upload {upload_id} failed with exception: {error_msg}")
+    
+    def _recover_stuck_uploads(self) -> None:
+        """Reset uploads stuck in 'uploading' status back to 'pending'.
+        
+        This handles cases where uploads get stuck due to crashes, network
+        timeouts, or other failures that prevent the status from being updated.
+        Uploads in 'uploading' status for more than 5 minutes are considered stuck.
+        """
+        try:
+            count = self.db.reset_stuck_uploads(timeout_minutes=5)
+            if count > 0:
+                logger.warning(f"Reset {count} upload(s) stuck in 'uploading' status back to 'pending'")
+        except Exception as e:
+            logger.error(f"Failed to recover stuck uploads: {e}")
     
     def get_stats(self) -> dict:
         """Get upload queue statistics."""

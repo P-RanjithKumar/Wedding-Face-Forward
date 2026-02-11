@@ -1,0 +1,780 @@
+starting generic LSP server
+ INFO Reading messages
+ INFO File c:\Users\ranji\Desktop\MYwork\Wedding Face Forward\WeddingFFapp.py opened, prepare to validate open files.
+ INFO Validated open files and saved non-committable transaction.
+ INFO Ran task on sourcedb_queue heavy task queue. Queue time: 0.00, task time: 0.00
+ INFO Populating up to 2000 files in the workspace ("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward").
+ INFO Language server processed event `DidOpenTextDocument` in 0.54s (0.00s waiting)
+ INFO Cleared 1 dropped configs from config cache
+ INFO Language server processed event `DidOpenTextDocument` in 0.00s (0.53s waiting)
+ INFO Language server processed event `DidOpenTextDocument` in 0.00s (0.53s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.52s waiting)
+ INFO Client configuration applied to workspace: Some(Url { scheme: "file", cannot_be_a_base: false, username: "", password: None, host: None, port: None, path: "/C:/Users/ranji/Desktop/MYwork/Wedding%20Face%20Forward", query: None, fragment: None })
+ INFO Client configuration applied to workspace: None
+ INFO Language server processed event `LspResponse` in 0.00s (0.52s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Prepare to check 37 files.
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Populated all files in the workspace, prepare to recheck open files.
+ INFO Ran task on recheck_queue heavy task queue. Queue time: 0.00, task time: 2.17
+ INFO Populating all files in the config (Marker("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward\\backend\\pyproject.toml")).
+ INFO Prepare to check 16 files.
+ERROR Thread panicked, shutting down: panicked at pyrefly\lib\state\state.rs:1559:17:
+assertion failed: inserted
+Backtrace:
+   0: std::backtrace_rs::backtrace::win64::trace
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\win64.rs:85
+   1: std::backtrace_rs::backtrace::trace_unsynchronized
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\mod.rs:66
+   2: std::backtrace::Backtrace::create
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:331
+   3: std::backtrace::Backtrace::force_capture
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:312
+   4: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   5: std::sys::sync::once::futex::Once::call
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\sync\once\futex.rs:178
+   6: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   7: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   8: std::panicking::rust_panic_with_hook
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:841
+   9: std::panicking::begin_panic_handler::closure$0
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:699
+  10: std::sys::backtrace::__rust_end_short_backtrace<std::panicking::begin_panic_handler::closure_env$0,never$>
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\backtrace.rs:174
+  11: std::panicking::begin_panic_handler
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:697
+  12: core::panicking::panic_fmt
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:75
+  13: core::panicking::panic
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:145
+  14: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  15: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  16: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  17: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  18: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  19: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  20: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  21: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  22: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  23: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  24: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  25: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  26: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  27: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  28: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  29: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  30: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  31: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  32: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  33: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  34: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  35: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  36: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  37: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  38: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  39: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  40: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  41: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  42: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  43: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  44: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  45: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  46: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  47: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  48: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  49: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  50: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  51: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  52: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  53: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  54: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  55: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  56: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  57: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  58: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  59: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  60: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  61: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  62: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  63: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  64: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  65: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  66: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  67: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  68: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  69: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  70: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  71: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  72: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  73: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  74: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  75: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  76: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  77: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  78: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  79: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  80: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  81: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  82: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  83: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  84: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  85: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  86: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  87: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  88: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  89: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  90: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  91: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  92: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  93: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  94: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  95: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  96: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  97: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  98: core::panicking::panic_const::panic_const_async_fn_resumed_panic
+  99: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 100: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 101: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 102: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 103: std::sys::pal::windows::thread::impl$0::new::thread_start
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\pal\windows\thread.rs:60
+ 104: BaseThreadInitThunk
+ 105: RtlUserThreadStart
+
+PANIC Sorry, Pyrefly crashed, this is always a bug in Pyrefly itself.
+PANIC Please report the bug at https://github.com/facebook/pyrefly/issues/new
+[Info  - 6:24:29 PM] Connection to server got closed. Server will restart.
+true
+starting generic LSP server
+ INFO Reading messages
+ INFO File c:\Users\ranji\Desktop\MYwork\Wedding Face Forward\WeddingFFapp.py opened, prepare to validate open files.
+[Error - 6:24:29 PM] Server process exited with code 101.
+ INFO Validated open files and saved non-committable transaction.
+ INFO Ran task on sourcedb_queue heavy task queue. Queue time: 0.00, task time: 0.00
+ INFO Populating up to 2000 files in the workspace ("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward").
+ INFO Language server processed event `DidOpenTextDocument` in 0.39s (0.00s waiting)
+ INFO Cleared 1 dropped configs from config cache
+ INFO Language server processed event `DidOpenTextDocument` in 0.00s (0.38s waiting)
+ INFO Language server processed event `DidOpenTextDocument` in 0.00s (0.39s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.39s waiting)
+ INFO Client configuration applied to workspace: Some(Url { scheme: "file", cannot_be_a_base: false, username: "", password: None, host: None, port: None, path: "/C:/Users/ranji/Desktop/MYwork/Wedding%20Face%20Forward", query: None, fragment: None })
+ INFO Client configuration applied to workspace: None
+ INFO Language server processed event `LspResponse` in 0.00s (0.39s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Prepare to check 37 files.
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Populated all files in the workspace, prepare to recheck open files.
+ INFO Ran task on recheck_queue heavy task queue. Queue time: 0.00, task time: 2.10
+ INFO Populating all files in the config (Marker("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward\\backend\\pyproject.toml")).
+ INFO Prepare to check 16 files.
+ERROR Thread panicked, shutting down: panicked at pyrefly\lib\state\state.rs:1559:17:
+assertion failed: inserted
+Backtrace:
+   0: std::backtrace_rs::backtrace::win64::trace
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\win64.rs:85
+   1: std::backtrace_rs::backtrace::trace_unsynchronized
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\mod.rs:66
+   2: std::backtrace::Backtrace::create
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:331
+   3: std::backtrace::Backtrace::force_capture
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:312
+   4: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   5: std::sys::sync::once::futex::Once::call
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\sync\once\futex.rs:178
+   6: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   7: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   8: std::panicking::rust_panic_with_hook
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:841
+   9: std::panicking::begin_panic_handler::closure$0
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:699
+  10: std::sys::backtrace::__rust_end_short_backtrace<std::panicking::begin_panic_handler::closure_env$0,never$>
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\backtrace.rs:174
+  11: std::panicking::begin_panic_handler
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:697
+  12: core::panicking::panic_fmt
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:75
+  13: core::panicking::panic
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:145
+  14: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  15: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  16: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  17: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  18: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  19: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  20: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  21: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  22: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  23: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  24: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  25: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  26: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  27: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  28: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  29: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  30: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  31: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  32: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  33: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  34: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  35: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  36: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  37: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  38: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  39: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  40: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  41: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  42: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  43: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  44: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  45: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  46: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  47: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  48: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  49: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  50: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  51: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  52: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  53: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  54: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  55: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  56: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  57: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  58: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  59: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  60: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  61: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  62: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  63: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  64: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  65: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  66: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  67: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  68: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  69: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  70: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  71: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  72: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  73: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  74: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  75: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  76: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  77: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  78: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  79: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  80: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  81: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  82: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  83: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  84: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  85: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  86: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  87: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  88: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  89: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  90: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  91: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  92: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  93: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  94: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  95: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  96: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  97: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  98: core::panicking::panic_const::panic_const_async_fn_resumed_panic
+  99: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 100: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 101: core::panicking::panic_const::panic_const_async_fn_resumed_panic
+ 102: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 103: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 104: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 105: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 106: std::sys::pal::windows::thread::impl$0::new::thread_start
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\pal\windows\thread.rs:60
+ 107: BaseThreadInitThunk
+ 108: RtlUserThreadStart
+
+PANIC Sorry, Pyrefly crashed, this is always a bug in Pyrefly itself.
+PANIC Please report the bug at https://github.com/facebook/pyrefly/issues/new
+[Info  - 6:24:32 PM] Connection to server got closed. Server will restart.
+true
+starting generic LSP server
+ INFO Reading messages
+ INFO File c:\Users\ranji\Desktop\MYwork\Wedding Face Forward\WeddingFFapp.py opened, prepare to validate open files.
+[Error - 6:24:32 PM] Server process exited with code 101.
+ INFO Validated open files and saved non-committable transaction.
+ INFO Language server processed event `DidOpenTextDocument` in 0.42s (0.00s waiting)
+ INFO Ran task on sourcedb_queue heavy task queue. Queue time: 0.00, task time: 0.00
+ INFO Populating up to 2000 files in the workspace ("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward").
+ INFO Cleared 1 dropped configs from config cache
+ INFO Language server processed event `DidOpenTextDocument` in 0.00s (0.42s waiting)
+ INFO Language server processed event `DidOpenTextDocument` in 0.00s (0.42s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.42s waiting)
+ INFO Client configuration applied to workspace: Some(Url { scheme: "file", cannot_be_a_base: false, username: "", password: None, host: None, port: None, path: "/C:/Users/ranji/Desktop/MYwork/Wedding%20Face%20Forward", query: None, fragment: None })
+ INFO Client configuration applied to workspace: None
+ INFO Language server processed event `LspResponse` in 0.00s (0.42s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Prepare to check 37 files.
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Populated all files in the workspace, prepare to recheck open files.
+ INFO Ran task on recheck_queue heavy task queue. Queue time: 0.00, task time: 2.14
+ INFO Populating all files in the config (Marker("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward\\backend\\pyproject.toml")).
+ INFO Prepare to check 16 files.
+ERROR Thread panicked, shutting down: panicked at pyrefly\lib\state\state.rs:1559:17:
+assertion failed: inserted
+Backtrace:
+   0: std::backtrace_rs::backtrace::win64::trace
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\win64.rs:85
+   1: std::backtrace_rs::backtrace::trace_unsynchronized
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\mod.rs:66
+   2: std::backtrace::Backtrace::create
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:331
+   3: std::backtrace::Backtrace::force_capture
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:312
+   4: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   5: std::sys::sync::once::futex::Once::call
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\sync\once\futex.rs:178
+   6: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   7: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   8: std::panicking::rust_panic_with_hook
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:841
+   9: std::panicking::begin_panic_handler::closure$0
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:699
+  10: std::sys::backtrace::__rust_end_short_backtrace<std::panicking::begin_panic_handler::closure_env$0,never$>
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\backtrace.rs:174
+  11: std::panicking::begin_panic_handler
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:697
+  12: core::panicking::panic_fmt
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:75
+  13: core::panicking::panic
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:145
+  14: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  15: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  16: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  17: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  18: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  19: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  20: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  21: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  22: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  23: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  24: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  25: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  26: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  27: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  28: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  29: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  30: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  31: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  32: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  33: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  34: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  35: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  36: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  37: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  38: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  39: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  40: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  41: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  42: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  43: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  44: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  45: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  46: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  47: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  48: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  49: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  50: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  51: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  52: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  53: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  54: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  55: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  56: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  57: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  58: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  59: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  60: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  61: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  62: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  63: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  64: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  65: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  66: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  67: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  68: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  69: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  70: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  71: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  72: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  73: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  74: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  75: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  76: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  77: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  78: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  79: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  80: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  81: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  82: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  83: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  84: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  85: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  86: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  87: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  88: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  89: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  90: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  91: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  92: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  93: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  94: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  95: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  96: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  97: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  98: core::panicking::panic_const::panic_const_async_fn_resumed_panic
+  99: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 100: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 101: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 102: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 103: std::sys::pal::windows::thread::impl$0::new::thread_start
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\pal\windows\thread.rs:60
+ 104: BaseThreadInitThunk
+ 105: RtlUserThreadStart
+
+PANIC Sorry, Pyrefly crashed, this is always a bug in Pyrefly itself.
+PANIC Please report the bug at https://github.com/facebook/pyrefly/issues/new
+[Info  - 6:24:35 PM] Connection to server got closed. Server will restart.
+true
+starting generic LSP server
+ INFO Reading messages
+ INFO File c:\Users\ranji\Desktop\MYwork\Wedding Face Forward\WeddingFFapp.py opened, prepare to validate open files.
+[Error - 6:24:35 PM] Server process exited with code 101.
+ INFO Validated open files and saved non-committable transaction.
+ INFO Populating up to 2000 files in the workspace ("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward").
+ INFO Language server processed event `DidOpenTextDocument` in 0.43s (0.00s waiting)
+ INFO Ran task on sourcedb_queue heavy task queue. Queue time: 0.00, task time: 0.00
+ INFO Cleared 1 dropped configs from config cache
+ INFO Language server processed event `DidOpenTextDocument` in 0.00s (0.43s waiting)
+ INFO Language server processed event `DidOpenTextDocument` in 0.02s (0.43s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.44s waiting)
+ INFO Client configuration applied to workspace: Some(Url { scheme: "file", cannot_be_a_base: false, username: "", password: None, host: None, port: None, path: "/C:/Users/ranji/Desktop/MYwork/Wedding%20Face%20Forward", query: None, fragment: None })
+ INFO Client configuration applied to workspace: None
+ INFO Language server processed event `LspResponse` in 0.00s (0.44s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.02s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.02s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Prepare to check 37 files.
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Populated all files in the workspace, prepare to recheck open files.
+ INFO Ran task on recheck_queue heavy task queue. Queue time: 0.00, task time: 2.97
+ INFO Populating all files in the config (Marker("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward\\backend\\pyproject.toml")).
+ INFO Prepare to check 16 files.
+ERROR Thread panicked, shutting down: panicked at pyrefly\lib\state\state.rs:1559:17:
+assertion failed: inserted
+Backtrace:
+   0: std::backtrace_rs::backtrace::win64::trace
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\win64.rs:85
+   1: std::backtrace_rs::backtrace::trace_unsynchronized
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\mod.rs:66
+   2: std::backtrace::Backtrace::create
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:331
+   3: std::backtrace::Backtrace::force_capture
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:312
+   4: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   5: std::sys::sync::once::futex::Once::call
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\sync\once\futex.rs:178
+   6: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   7: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   8: std::panicking::rust_panic_with_hook
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:841
+   9: std::panicking::begin_panic_handler::closure$0
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:699
+  10: std::sys::backtrace::__rust_end_short_backtrace<std::panicking::begin_panic_handler::closure_env$0,never$>
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\backtrace.rs:174
+  11: std::panicking::begin_panic_handler
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:697
+  12: core::panicking::panic_fmt
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:75
+  13: core::panicking::panic
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:145
+  14: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  15: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  16: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  17: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  18: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  19: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  20: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  21: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  22: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  23: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  24: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  25: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  26: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  27: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  28: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  29: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  30: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  31: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  32: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  33: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  34: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  35: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  36: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  37: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  38: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  39: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  40: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  41: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  42: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  43: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  44: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  45: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  46: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  47: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  48: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  49: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  50: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  51: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  52: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  53: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  54: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  55: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  56: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  57: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  58: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  59: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  60: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  61: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  62: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  63: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  64: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  65: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  66: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  67: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  68: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  69: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  70: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  71: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  72: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  73: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  74: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  75: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  76: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  77: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  78: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  79: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  80: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  81: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  82: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  83: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  84: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  85: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  86: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  87: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  88: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  89: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  90: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  91: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  92: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  93: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  94: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  95: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  96: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  97: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  98: core::panicking::panic_const::panic_const_async_fn_resumed_panic
+  99: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 100: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 101: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 102: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 103: std::sys::pal::windows::thread::impl$0::new::thread_start
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\pal\windows\thread.rs:60
+ 104: BaseThreadInitThunk
+ 105: RtlUserThreadStart
+
+PANIC Sorry, Pyrefly crashed, this is always a bug in Pyrefly itself.
+PANIC Please report the bug at https://github.com/facebook/pyrefly/issues/new
+[Info  - 6:24:38 PM] Connection to server got closed. Server will restart.
+true
+starting generic LSP server
+ INFO Reading messages
+ INFO File c:\Users\ranji\Desktop\MYwork\Wedding Face Forward\WeddingFFapp.py opened, prepare to validate open files.
+[Error - 6:24:38 PM] Server process exited with code 101.
+ INFO Validated open files and saved non-committable transaction.
+ INFO Ran task on sourcedb_queue heavy task queue. Queue time: 0.00, task time: 0.00
+ INFO Populating up to 2000 files in the workspace ("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward").
+ INFO Language server processed event `DidOpenTextDocument` in 0.54s (0.00s waiting)
+ INFO Cleared 1 dropped configs from config cache
+ INFO Language server processed event `DidOpenTextDocument` in 0.00s (0.54s waiting)
+ INFO Language server processed event `DidOpenTextDocument` in 0.00s (0.54s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.54s waiting)
+ INFO Client configuration applied to workspace: Some(Url { scheme: "file", cannot_be_a_base: false, username: "", password: None, host: None, port: None, path: "/C:/Users/ranji/Desktop/MYwork/Wedding%20Face%20Forward", query: None, fragment: None })
+ INFO Client configuration applied to workspace: None
+ INFO Language server processed event `LspResponse` in 0.00s (0.53s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Prepare to check 37 files.
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Language server processed event `LspResponse` in 0.00s (0.00s waiting)
+ INFO Populated all files in the workspace, prepare to recheck open files.
+ INFO Ran task on recheck_queue heavy task queue. Queue time: 0.00, task time: 2.22
+ INFO Populating all files in the config (Marker("c:\\Users\\ranji\\Desktop\\MYwork\\Wedding Face Forward\\backend\\pyproject.toml")).
+ INFO Prepare to check 16 files.
+ERROR Thread panicked, shutting down: panicked at pyrefly\lib\state\state.rs:1559:17:
+assertion failed: inserted
+Backtrace:
+   0: std::backtrace_rs::backtrace::win64::trace
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\win64.rs:85
+   1: std::backtrace_rs::backtrace::trace_unsynchronized
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\..\..\backtrace\src\backtrace\mod.rs:66
+   2: std::backtrace::Backtrace::create
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:331
+   3: std::backtrace::Backtrace::force_capture
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\backtrace.rs:312
+   4: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   5: std::sys::sync::once::futex::Once::call
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\sync\once\futex.rs:178
+   6: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   7: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+   8: std::panicking::rust_panic_with_hook
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:841
+   9: std::panicking::begin_panic_handler::closure$0
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:699
+  10: std::sys::backtrace::__rust_end_short_backtrace<std::panicking::begin_panic_handler::closure_env$0,never$>
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\backtrace.rs:174
+  11: std::panicking::begin_panic_handler
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\panicking.rs:697
+  12: core::panicking::panic_fmt
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:75
+  13: core::panicking::panic
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\core\src\panicking.rs:145
+  14: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  15: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  16: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  17: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  18: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  19: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  20: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  21: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  22: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  23: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  24: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  25: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  26: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  27: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  28: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  29: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  30: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  31: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  32: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  33: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  34: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  35: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  36: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  37: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  38: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  39: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  40: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  41: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  42: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  43: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  44: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  45: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  46: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  47: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  48: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  49: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  50: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  51: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  52: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  53: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  54: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  55: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  56: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  57: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  58: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  59: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  60: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  61: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  62: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  63: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  64: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  65: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  66: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  67: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  68: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  69: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  70: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  71: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  72: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  73: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  74: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  75: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  76: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  77: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  78: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  79: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  80: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  81: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  82: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  83: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  84: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  85: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  86: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  87: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  88: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  89: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  90: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  91: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  92: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  93: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  94: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  95: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  96: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  97: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+  98: core::panicking::panic_const::panic_const_async_fn_resumed_panic
+  99: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 100: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 101: core::panicking::panic_const::panic_const_async_fn_resumed_panic
+ 102: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 103: core::ptr::drop_in_place<enum2$<core::result::Result<tuple$<>,alloc::boxed::Box<dyn$<core::any::Any,core::marker::Send>,alloc::alloc::Global> > > >
+ 104: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 105: alloc::boxed::impl$28::call_once
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\alloc\src\boxed.rs:1971
+ 106: std::sys::pal::windows::thread::impl$0::new::thread_start
+             at /rustc/adcb3d3b4cd3b7c4cde642f3ed537037f293738e/library\std\src\sys\pal\windows\thread.rs:60
+ 107: BaseThreadInitThunk
+ 108: RtlUserThreadStart
+
+PANIC Sorry, Pyrefly crashed, this is always a bug in Pyrefly itself.
+PANIC Please report the bug at https://github.com/facebook/pyrefly/issues/new
+[Error - 6:24:41 PM] The Pyrefly language server server crashed 5 times in the last 3 minutes. The server will not be restarted. See the output for more information.
+[Error - 6:24:41 PM] Server process exited with code 101.

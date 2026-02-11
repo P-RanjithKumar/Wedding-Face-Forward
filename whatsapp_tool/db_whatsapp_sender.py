@@ -132,32 +132,53 @@ async def check_login(page):
         await asyncio.sleep(5)
         return False
 
+MAX_RETRIES = 3  # Max attempts before marking as permanently failed
+
+def validate_phone_number(phone: str) -> bool:
+    """Validate that a phone number is plausible.
+    
+    E.164 standard: phone numbers are 7-15 digits (including country code).
+    Numbers outside this range are clearly invalid.
+    """
+    digits_only = "".join(filter(str.isdigit, phone))
+    if len(digits_only) < 7:
+        return False
+    if len(digits_only) > 15:
+        return False
+    return True
+
 async def send_whatsapp_message(page, phone, message, enrollment_id, state):
     """Sends a WhatsApp message to a specific phone number."""
     
     user_key = str(enrollment_id) # Use enrollment ID as unique key
     
-    # Check if already sent
-    # Check if already processed (sent or invalid)
+    # Check if already processed (sent, invalid, or permanently failed)
     if user_key in state:
         status = state[user_key].get('status')
-        if status == 'sent':
-            # print(f"[{phone}] Already sent to enrollment {enrollment_id}. Skipping.")
+        if status in ('sent', 'invalid', 'failed'):
             return
-        elif status == 'invalid':
-            # print(f"[{phone}] Marked as invalid number for enrollment {enrollment_id}. Skipping.")
-            return
+
+    # Validate phone number before attempting
+    if not validate_phone_number(phone):
+        print(f"[{phone}] Error: Phone number is invalid (must be 7-15 digits). Marking as invalid.")
+        print(f"Activity: Invalid phone number format for {phone}. Skipping.", flush=True)
+        state[user_key] = {'status': 'invalid', 'phone': phone, 'timestamp': datetime.now().isoformat(), 'reason': 'invalid_format'}
+        save_state(state)
+        return
 
     print(f"[{phone}] Navigating...")
     
     encoded_message = urllib.parse.quote(message)
     url = f"https://web.whatsapp.com/send?phone={phone}&text={encoded_message}"
     
+    # Get current retry count from state
+    retry_count = 0
+    if user_key in state:
+        retry_count = state[user_key].get('retry_count', 0)
+    
     try:
         await page.goto(url)
         
-        # Validation checks (same as original script)
-        is_valid = False
         # Try multiple selectors for the chat input box
         input_box = None
         selectors = [
@@ -190,7 +211,6 @@ async def send_whatsapp_message(page, phone, message, enrollment_id, state):
             found_invalid = False
             for text in invalid_texts:
                 try:
-                    # Look for any element containing this text
                     element = page.locator(f"text={text}")
                     if await element.count() > 0 and await element.is_visible():
                         found_invalid = True
@@ -213,7 +233,25 @@ async def send_whatsapp_message(page, phone, message, enrollment_id, state):
             await asyncio.sleep(1)
         
         if not input_box:
-            print(f"[{phone}] Error: Timeout waiting for chat input. Is WhatsApp Web loaded?")
+            # Timeout — track retries to prevent infinite loop
+            retry_count += 1
+            if retry_count >= MAX_RETRIES:
+                print(f"[{phone}] Error: Timeout after {MAX_RETRIES} attempts. Marking as failed.")
+                print(f"Activity: Failed to send to {phone} after {MAX_RETRIES} attempts.", flush=True)
+                state[user_key] = {
+                    'status': 'failed', 'phone': phone,
+                    'timestamp': datetime.now().isoformat(),
+                    'retry_count': retry_count,
+                    'reason': 'timeout_max_retries'
+                }
+            else:
+                print(f"[{phone}] Error: Timeout waiting for chat input (attempt {retry_count}/{MAX_RETRIES}).")
+                state[user_key] = {
+                    'status': 'retry', 'phone': phone,
+                    'timestamp': datetime.now().isoformat(),
+                    'retry_count': retry_count
+                }
+            save_state(state)
             return
 
         print(f"[{phone}] Ready to send. Pressing Enter...")
@@ -229,8 +267,24 @@ async def send_whatsapp_message(page, phone, message, enrollment_id, state):
         save_state(state)
 
     except Exception as e:
+        retry_count += 1
         print(f"[{phone}] Navigation/Send Error: {e}")
-        print(f"Activity: Failed to send to {phone}. Error: {str(e)[:50]}...", flush=True)
+        if retry_count >= MAX_RETRIES:
+            print(f"Activity: Failed to send to {phone} after {MAX_RETRIES} attempts. Error: {str(e)[:50]}...", flush=True)
+            state[user_key] = {
+                'status': 'failed', 'phone': phone,
+                'timestamp': datetime.now().isoformat(),
+                'retry_count': retry_count,
+                'reason': f'error: {str(e)[:100]}'
+            }
+        else:
+            print(f"Activity: Error sending to {phone} (attempt {retry_count}/{MAX_RETRIES}): {str(e)[:50]}...", flush=True)
+            state[user_key] = {
+                'status': 'retry', 'phone': phone,
+                'timestamp': datetime.now().isoformat(),
+                'retry_count': retry_count
+            }
+        save_state(state)
 
 async def main():
     print("-" * 50)
@@ -328,7 +382,7 @@ async def main():
                     user_key = str(enrollment_id)
                     if user_key in state:
                         status = state[user_key].get('status')
-                        if status == 'sent' or status == 'invalid':
+                        if status in ('sent', 'invalid', 'failed'):
                              continue
 
                     print(f"\nFound new enrollment: {name} ({clean_phone})")
