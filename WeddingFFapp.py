@@ -14,6 +14,7 @@ import time
 import multiprocessing
 from pathlib import Path
 from datetime import datetime
+import webbrowser
 
 # Add backend to path for imports
 BASE_DIR = Path(__file__).parent.resolve()
@@ -37,18 +38,24 @@ from app.db import get_db
 
 
 # =============================================================================
-# Color Theme - Minimal White
+# Color Theme - Design Guide Palette
 # =============================================================================
 COLORS = {
-    "bg": ("#f5f5f7", "#1c1c1e"),
-    "bg_card": ("#ffffff", "#2c2c2e"),
-    "border": ("#e0e0e0", "#3a3a3c"),
-    "accent": ("#007aff", "#0a84ff"),
-    "success": ("#34c759", "#30d158"),
-    "warning": ("#ff9500", "#ff9f0a"),
-    "error": ("#ff3b30", "#ff453a"),
-    "text_primary": ("#1d1d1f", "#ffffff"),
-    "text_secondary": ("#86868b", "#98989d"),
+    "bg":              ("#ffffff", "#1c1c1e"),       # White / Dark
+    "bg_card":         ("#ffffff", "#2c2c2e"),
+    "border":          ("#e0e0e0", "#3a3a3c"),
+    "accent":          ("#007aff", "#0a84ff"),
+    "success":         ("#34c759", "#30d158"),
+    "warning":         ("#ff9500", "#ff9f0a"),
+    "error":           ("#ff3b30", "#ff453a"),
+    "text_primary":    ("#1d1d1f", "#ffffff"),
+    "text_secondary":  ("#86868b", "#98989d"),
+    # Design guide specific
+    "stat_bg":         ("#FCEFCD", "#3a3227"),       # Light peach / dark variant
+    "stat_highlight":  ("#F6E9B2", "#4a4020"),       # Darker yellow-beige / dark variant
+    "thick_border":    ("#000000", "#555555"),        # Thick black borders
+    "log_outer":       ("#7A7A7A", "#4a4a4a"),       # Dark grey activity log bg
+    "log_inner":       ("#000000", "#111111"),        # Black terminal
 }
 
 
@@ -61,10 +68,10 @@ class StatusIndicator(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
         
-        self.dot = ctk.CTkLabel(self, text="●", font=("SF Pro Display", 14), text_color=COLORS["text_secondary"])
+        self.dot = ctk.CTkLabel(self, text="●", font=("Segoe UI", 14), text_color=COLORS["text_secondary"])
         self.dot.pack(side="left", padx=(0, 6))
         
-        self.label = ctk.CTkLabel(self, text="Stopped", font=("SF Pro Display", 13), text_color=COLORS["text_secondary"])
+        self.label = ctk.CTkLabel(self, text="Stopped", font=("Segoe UI", 13), text_color=COLORS["text_secondary"])
         self.label.pack(side="left")
         
         self._pulsing = False
@@ -94,8 +101,6 @@ class StatusIndicator(ctk.CTkFrame):
         if not self._pulsing:
             return
         
-        # Pulse between dim and bright
-        # Pulse between dim and bright (Light, Dark)
         colors = [COLORS["success"], ("#5fd47a", "#4cd964"), COLORS["success"], ("#2aa64a", "#248a3d")]
         if "Stopping" in self.label.cget("text") or "Starting" in self.label.cget("text"):
             colors = [COLORS["warning"], ("#ffaa33", "#ffb340"), COLORS["warning"], ("#cc7700", "#d98816")]
@@ -107,105 +112,175 @@ class StatusIndicator(ctk.CTkFrame):
 
 
 # =============================================================================
-# Animated Button
+# System Health Indicator (All Workers Status)
 # =============================================================================
-class AnimatedButton(ctk.CTkButton):
-    """Button with smooth hover transition."""
+class SystemHealthIndicator(ctk.CTkFrame):
+    """Shows overall system health: green = all idle, red/orange = workers busy."""
     
-    def __init__(self, parent, **kwargs):
-        self._base_color = kwargs.get("fg_color", COLORS["accent"])
-
-        self._hover_color = kwargs.get("hover_color", ("#005ecb", "#006bd6"))
-        super().__init__(parent, **kwargs)
-        
-        self.bind("<Enter>", self._on_enter)
-        self.bind("<Leave>", self._on_leave)
-    
-    def _on_enter(self, e=None):
-        self._animate_color(self._base_color, self._hover_color, 0)
-    
-    def _on_leave(self, e=None):
-        self._animate_color(self._hover_color, self._base_color, 0)
-    
-    def _animate_color(self, start, end, step):
-        if step > 5:
-            return
-        # Simple fade effect - just switch at step 2
-        if step == 2:
-            self.configure(fg_color=end)
-        self.after(20, lambda: self._animate_color(start, end, step + 1))
-
-
-# =============================================================================
-# Stat Card Widget
-# =============================================================================
-class StatCard(ctk.CTkFrame):
-    """A simple stat card with number and label."""
-    
-    def __init__(self, parent, title: str, value: str = "0", color: str = None):
-        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
-        
-        self._color = color or COLORS["text_primary"]
-        self.value_label = ctk.CTkLabel(
-            self, text=value, font=("SF Pro Display", 32, "bold"),
-            text_color=self._color
+    def __init__(self, parent):
+        super().__init__(
+            parent, 
+            fg_color=COLORS["bg_card"], 
+            corner_radius=20,
+            border_width=2,
+            border_color=COLORS["border"]
         )
-        self.value_label.pack(pady=(20, 5))
         
-        self.title_label = ctk.CTkLabel(
-            self, text=title, font=("SF Pro Display", 13),
+        # Inner container for padding
+        inner = ctk.CTkFrame(self, fg_color="transparent")
+        inner.pack(padx=12, pady=6)
+        
+        self.dot = ctk.CTkLabel(inner, text="●", font=("Segoe UI", 14), text_color=COLORS["text_secondary"])
+        self.dot.pack(side="left", padx=(0, 8))
+        
+        self.label = ctk.CTkLabel(
+            inner, text="System Idle", 
+            font=("Segoe UI", 11, "bold"), 
             text_color=COLORS["text_secondary"]
         )
-        self.title_label.pack(pady=(0, 20))
+        self.label.pack(side="left")
+        
+        self._state = "offline"  # "offline", "idle", or "busy"
+        self._pulsing = False
+        self._pulse_step = 0
+        self._scale = 1.0
+        self._target_scale = 1.0
+    
+    def set_idle(self):
+        """All workers are idle - show green pulsating dot."""
+        if self._state == "idle":
+            return  # Already idle, no change
+        
+        self._state = "idle"
+        self._pulsing = True
+        self._target_scale = 1.0
+        self.configure(border_color=COLORS["success"])
+        self.label.configure(text="System Idle", text_color=COLORS["success"])
+        self._pulse()
+    
+    def set_busy(self):
+        """At least one worker is busy - show red/orange pulsating dot."""
+        if self._state == "busy":
+            return  # Already busy, no change
+        
+        self._state = "busy"
+        self._pulsing = True
+        self._target_scale = 1.05
+        self.configure(border_color=COLORS["warning"])
+        self.label.configure(text="Workers Active", text_color=COLORS["warning"])
+        self._pulse()
+    
+    def set_offline(self):
+        """System is stopped - show grey static dot."""
+        if self._state == "offline":
+            return  # Already offline
+        
+        self._state = "offline"
+        self._pulsing = False
+        self._target_scale = 1.0
+        self.configure(border_color=COLORS["border"])
+        self.dot.configure(text_color=COLORS["text_secondary"])
+        self.label.configure(text="System Offline", text_color=COLORS["text_secondary"])
+    
+    def _pulse(self):
+        if not self._pulsing:
+            return
+        
+        if self._state == "busy":
+            # Red/Orange pulsating for busy
+            colors = [
+                COLORS["error"], 
+                ("#ff6b60", "#ff6b60"), 
+                COLORS["warning"], 
+                ("#ffaa33", "#ffb340")
+            ]
+        else:
+            # Green pulsating for idle
+            colors = [
+                COLORS["success"], 
+                ("#5fd47a", "#4cd964"), 
+                COLORS["success"], 
+                ("#2aa64a", "#248a3d")
+            ]
+        
+        self.dot.configure(text_color=colors[self._pulse_step % len(colors)])
+        self._pulse_step += 1
+        
+        self.after(500, self._pulse)
+
+
+# =============================================================================
+# Stat Card Widget (Design Guide Style)
+# =============================================================================
+class StatCard(ctk.CTkFrame):
+    """A stat card with big number and label — peach/beige background."""
+    
+    def __init__(self, parent, title: str, value: str = "0", highlight: bool = False):
+        bg_color = COLORS["stat_highlight"] if highlight else COLORS["stat_bg"]
+        super().__init__(
+            parent, fg_color=bg_color, corner_radius=10,
+            border_width=0
+        )
+        
+        self._bg_color = bg_color
+        self.value_label = ctk.CTkLabel(
+            self, text=value, font=("Segoe UI", 28, "bold"),
+            text_color=COLORS["text_primary"]
+        )
+        self.value_label.pack(pady=(18, 4))
+        
+        self.title_label = ctk.CTkLabel(
+            self, text=title.upper(), font=("Segoe UI", 11, "bold"),
+            text_color=COLORS["text_primary"]
+        )
+        self.title_label.pack(pady=(0, 16))
         
         self._last_value = value
     
     def update_value(self, value: str):
         if value != self._last_value:
-            # Brief highlight animation on change
             self.value_label.configure(text_color=COLORS["accent"])
-            self.after(300, lambda: self.value_label.configure(text_color=self._color))
+            self.after(300, lambda: self.value_label.configure(text_color=COLORS["text_primary"]))
             self.value_label.configure(text=value)
             self._last_value = value
 
 
 # =============================================================================
-# Status Section Widget
+# Status Card (Thick Black Border) — for PROCESSING, CLOUD SYNC, STUCK
 # =============================================================================
-class StatusSection(ctk.CTkFrame):
-    """A section with title and status rows."""
+class StatusCard(ctk.CTkFrame):
+    """Status card with thick black border, white bg, bold text — matches design guide."""
     
     def __init__(self, parent, title: str):
-        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+        super().__init__(
+            parent, fg_color=COLORS["bg_card"], corner_radius=12,
+            border_width=3, border_color=COLORS["thick_border"]
+        )
         
         self.title_label = ctk.CTkLabel(
-            self, text=title, font=("SF Pro Display", 15, "bold"),
-            text_color=COLORS["text_primary"], anchor="w"
+            self, text=title.upper(), font=("Segoe UI", 12, "bold"),
+            text_color=COLORS["text_primary"]
         )
-        self.title_label.pack(fill="x", padx=20, pady=(15, 10))
+        self.title_label.pack(pady=(12, 4))
         
-        self.rows = {}
+        self.value_label = ctk.CTkLabel(
+            self, text="—", font=("Segoe UI", 22, "bold"),
+            text_color=COLORS["text_secondary"]
+        )
+        self.value_label.pack(pady=(0, 4))
+        
+        self.detail_label = ctk.CTkLabel(
+            self, text="", font=("Segoe UI", 10),
+            text_color=COLORS["text_secondary"]
+        )
+        self.detail_label.pack(pady=(0, 10))
     
-    def add_row(self, key: str, label: str, value: str = "0"):
-        frame = ctk.CTkFrame(self, fg_color="transparent")
-        frame.pack(fill="x", padx=20, pady=3)
-        
-        lbl = ctk.CTkLabel(frame, text=label, font=("SF Pro Display", 13), text_color=COLORS["text_secondary"])
-        lbl.pack(side="left")
-        
-        val = ctk.CTkLabel(frame, text=value, font=("SF Pro Display", 13, "bold"), text_color=COLORS["text_primary"])
-        val.pack(side="right")
-        
-        self.rows[key] = val
-        return val
-    
-    def update_row(self, key: str, value: str):
-        if key in self.rows:
-            self.rows[key].configure(text=value)
-    
-    def add_padding(self):
-        ctk.CTkFrame(self, fg_color="transparent", height=10).pack()
-
+    def set_status(self, value: str, detail: str = "", color=None):
+        self.value_label.configure(
+            text=value,
+            text_color=color or COLORS["text_primary"]
+        )
+        self.detail_label.configure(text=detail)
 
 
 # =============================================================================
@@ -215,42 +290,40 @@ class ProcessingWidget(ctk.CTkFrame):
     """Animated circular progress bar with percentage and status."""
     
     def __init__(self, parent):
-        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=3, border_color=COLORS["thick_border"])
         
         self.title_label = ctk.CTkLabel(
-            self, text="Processing", font=("SF Pro Display", 15, "bold"),
+            self, text="PROCESSING", font=("Segoe UI", 12, "bold"),
             text_color=COLORS["text_primary"], anchor="w"
         )
-        self.title_label.pack(fill="x", padx=20, pady=(15, 5))
+        self.title_label.pack(fill="x", padx=20, pady=(12, 4))
         
         # Canvas for circular progress
-        self.canvas_size = 140
+        self.canvas_size = 120
         self.canvas = ctk.CTkCanvas(
             self, width=self.canvas_size, height=self.canvas_size,
             bg=COLORS["bg_card"][0], highlightthickness=0
         )
-        self.canvas.pack(pady=5)
+        self.canvas.pack(pady=4)
         
-        # Progress text (below ring)
         self.progress_label = ctk.CTkLabel(
-            self, text="0 / 0 Photos", font=("SF Pro Display", 12),
+            self, text="0 / 0 Photos", font=("Segoe UI", 11),
             text_color=COLORS["text_secondary"]
         )
-        self.progress_label.pack(pady=(0, 3))
+        self.progress_label.pack(pady=(0, 2))
         
         self.status_label = ctk.CTkLabel(
-            self, text="Idle", font=("SF Pro Display", 13),
+            self, text="Idle", font=("Segoe UI", 12),
             text_color=COLORS["text_secondary"]
         )
-        self.status_label.pack(pady=(0, 12))
+        self.status_label.pack(pady=(0, 10))
         
         self._animating = False
         self._angle = 0
         self._mode = "light"
         
-        # Progress state
-        self._target_progress = 0.0    # 0.0 to 1.0
-        self._current_progress = 0.0   # Smoothly animates toward target
+        self._target_progress = 0.0
+        self._current_progress = 0.0
         self._completed = 0
         self._total = 0
         
@@ -266,19 +339,16 @@ class ProcessingWidget(ctk.CTkFrame):
         """Draw the circular progress ring with current state."""
         self.canvas.delete("all")
         cx, cy = self.canvas_size / 2, self.canvas_size / 2
-        r = 52
+        r = 45
         line_w = 6
         
-        # Background ring (track)
         track_color = "#3a3a3c" if self._mode == "dark" else "#e0e0e0"
         self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r, outline=track_color, width=line_w)
         
-        # Progress arc
         progress = self._current_progress
         if progress > 0:
             extent = progress * 360
             
-            # Color: blue while processing, green when done
             if progress >= 1.0:
                 arc_color = COLORS["success"][1] if self._mode == "dark" else COLORS["success"][0]
             else:
@@ -290,7 +360,6 @@ class ProcessingWidget(ctk.CTkFrame):
                 outline=arc_color, width=line_w, style="arc"
             )
             
-            # Glow dot at the leading edge
             if 0 < progress < 1.0:
                 angle_rad = math.radians(90 - extent)
                 dot_x = cx + r * math.cos(angle_rad)
@@ -301,37 +370,33 @@ class ProcessingWidget(ctk.CTkFrame):
                     fill=arc_color, outline=""
                 )
         
-        # Center text
         pct_color = COLORS["text_primary"][1] if self._mode == "dark" else COLORS["text_primary"][0]
         
         if self._total == 0 and not self._animating:
-            # Idle state
             self.canvas.create_text(
                 cx, cy - 4, text="--",
-                fill=track_color, font=("SF Pro Display", 28, "bold")
+                fill=track_color, font=("Segoe UI", 24, "bold")
             )
             self.canvas.create_text(
-                cx, cy + 18, text="IDLE",
-                fill=track_color, font=("SF Pro Display", 10)
+                cx, cy + 16, text="IDLE",
+                fill=track_color, font=("Segoe UI", 9)
             )
         elif progress >= 1.0:
-            # Complete
             done_color = COLORS["success"][1] if self._mode == "dark" else COLORS["success"][0]
             self.canvas.create_text(
                 cx, cy - 2, text="DONE",
-                fill=done_color, font=("SF Pro Display", 22, "bold")
+                fill=done_color, font=("Segoe UI", 18, "bold")
             )
         else:
-            # In progress - show percentage
             pct = int(progress * 100)
             self.canvas.create_text(
-                cx, cy - 8, text=f"{pct}",
-                fill=pct_color, font=("SF Pro Display", 32, "bold")
+                cx, cy - 6, text=f"{pct}",
+                fill=pct_color, font=("Segoe UI", 28, "bold")
             )
             self.canvas.create_text(
-                cx, cy + 18, text="%",
+                cx, cy + 16, text="%",
                 fill=COLORS["text_secondary"][1] if self._mode == "dark" else COLORS["text_secondary"][0],
-                font=("SF Pro Display", 12)
+                font=("Segoe UI", 11)
             )
 
     def update_progress(self, completed: int, total: int):
@@ -344,7 +409,6 @@ class ProcessingWidget(ctk.CTkFrame):
         else:
             self._target_progress = 0.0
         
-        # Update text labels
         if total == 0:
             self.progress_label.configure(text="No photos queued")
             self.status_label.configure(text="Idle", text_color=COLORS["text_secondary"])
@@ -369,22 +433,21 @@ class ProcessingWidget(ctk.CTkFrame):
             self._draw_ring()
 
     def draw_static_ring(self):
-        """Legacy compatibility - just draw current state."""
+        """Legacy compatibility."""
         self._draw_ring()
 
     def _animate(self):
         if not self._animating:
             return
         
-        # Smooth interpolation toward target progress
         diff = self._target_progress - self._current_progress
         if abs(diff) > 0.002:
-            self._current_progress += diff * 0.12  # Ease-out
+            self._current_progress += diff * 0.12
         else:
             self._current_progress = self._target_progress
         
         self._draw_ring()
-        self.after(33, self._animate)  # ~30fps
+        self.after(33, self._animate)
 
 
 # =============================================================================
@@ -394,27 +457,26 @@ class CloudWidget(ctk.CTkFrame):
     """Animated cloud upload status."""
     
     def __init__(self, parent):
-        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=3, border_color=COLORS["thick_border"])
         
         self.title_label = ctk.CTkLabel(
-            self, text="Cloud Sync", font=("SF Pro Display", 15, "bold"),
+            self, text="CLOUD SYNC", font=("Segoe UI", 12, "bold"),
             text_color=COLORS["text_primary"], anchor="w"
         )
-        self.title_label.pack(fill="x", padx=20, pady=(15, 10))
+        self.title_label.pack(fill="x", padx=20, pady=(12, 4))
         
-        # Canvas
-        self.canvas_size = 140
+        self.canvas_size = 120
         self.canvas = ctk.CTkCanvas(
             self, width=self.canvas_size, height=self.canvas_size,
             bg=COLORS["bg_card"][0], highlightthickness=0
         )
-        self.canvas.pack(pady=10)
+        self.canvas.pack(pady=4)
         
         self.status_label = ctk.CTkLabel(
-            self, text="Synced", font=("SF Pro Display", 13),
+            self, text="Synced", font=("Segoe UI", 12),
             text_color=COLORS["text_secondary"]
         )
-        self.status_label.pack(pady=(0, 15))
+        self.status_label.pack(pady=(0, 10))
         
         self._uploading = False
         self._offset = 0
@@ -448,13 +510,11 @@ class CloudWidget(ctk.CTkFrame):
     def _draw_cloud_icon(self, offset=0, color="gray"):
         cx, cy = self.canvas_size / 2, self.canvas_size / 2
         
-        # Simple cloud shape (circles)
         self.canvas.create_oval(cx-30, cy-10, cx+10, cy+20, fill=color, outline="")
         self.canvas.create_oval(cx-10, cy-20, cx+30, cy+10, fill=color, outline="")
         self.canvas.create_oval(cx+10, cy-10, cx+40, cy+20, fill=color, outline="")
         self.canvas.create_oval(cx-20, cy+5, cx+30, cy+20, fill=color, outline="")
         
-        # Arrow (if animating)
         if self._uploading:
             arrow_y = cy + 10 - offset
             ac = COLORS["success"][1] if self._mode == "dark" else COLORS["success"][0]
@@ -473,78 +533,159 @@ class CloudWidget(ctk.CTkFrame):
         self._offset = (self._offset + 2) % 20
         self.after(50, self._animate)
 
-class ActivityLog(ctk.CTkFrame):
-    """Simple scrollable log."""
+
+# =============================================================================
+# Stuck Photos Card
+# =============================================================================
+class StuckPhotosCard(ctk.CTkFrame):
+    """Shows stuck photos in processing — both image analysis and cloud upload."""
     
     def __init__(self, parent):
-        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+        super().__init__(
+            parent, fg_color=COLORS["bg_card"], corner_radius=12,
+            border_width=3, border_color=COLORS["thick_border"]
+        )
         
         self.title_label = ctk.CTkLabel(
-            self, text="Activity", font=("SF Pro Display", 15, "bold"),
-            text_color=COLORS["text_primary"], anchor="w"
+            self, text="STUCK PHOTOS", font=("Segoe UI", 12, "bold"),
+            text_color=COLORS["text_primary"]
         )
-        self.title_label.pack(fill="x", padx=20, pady=(15, 10))
+        self.title_label.pack(pady=(12, 8))
         
+        # Processing stuck
+        proc_frame = ctk.CTkFrame(self, fg_color="transparent")
+        proc_frame.pack(fill="x", padx=16, pady=2)
+        ctk.CTkLabel(
+            proc_frame, text="Image Analysis", font=("Segoe UI", 11),
+            text_color=COLORS["text_secondary"]
+        ).pack(side="left")
+        self.proc_stuck_label = ctk.CTkLabel(
+            proc_frame, text="0", font=("Segoe UI", 14, "bold"),
+            text_color=COLORS["text_primary"]
+        )
+        self.proc_stuck_label.pack(side="right")
+        
+        # Cloud stuck
+        cloud_frame = ctk.CTkFrame(self, fg_color="transparent")
+        cloud_frame.pack(fill="x", padx=16, pady=2)
+        ctk.CTkLabel(
+            cloud_frame, text="Cloud Upload", font=("Segoe UI", 11),
+            text_color=COLORS["text_secondary"]
+        ).pack(side="left")
+        self.cloud_stuck_label = ctk.CTkLabel(
+            cloud_frame, text="0", font=("Segoe UI", 14, "bold"),
+            text_color=COLORS["text_primary"]
+        )
+        self.cloud_stuck_label.pack(side="right")
+        
+        # Total
+        sep = ctk.CTkFrame(self, fg_color=COLORS["border"], height=1)
+        sep.pack(fill="x", padx=16, pady=(6, 4))
+        
+        total_frame = ctk.CTkFrame(self, fg_color="transparent")
+        total_frame.pack(fill="x", padx=16, pady=(0, 10))
+        ctk.CTkLabel(
+            total_frame, text="Total Stuck", font=("Segoe UI", 11, "bold"),
+            text_color=COLORS["text_primary"]
+        ).pack(side="left")
+        self.total_stuck_label = ctk.CTkLabel(
+            total_frame, text="0", font=("Segoe UI", 14, "bold"),
+            text_color=COLORS["text_primary"]
+        )
+        self.total_stuck_label.pack(side="right")
+    
+    def update_stuck(self, proc_stuck: int, cloud_stuck: int):
+        total = proc_stuck + cloud_stuck
+        
+        self.proc_stuck_label.configure(
+            text=str(proc_stuck),
+            text_color=COLORS["warning"] if proc_stuck > 0 else COLORS["success"]
+        )
+        self.cloud_stuck_label.configure(
+            text=str(cloud_stuck),
+            text_color=COLORS["warning"] if cloud_stuck > 0 else COLORS["success"]
+        )
+        self.total_stuck_label.configure(
+            text=str(total),
+            text_color=COLORS["error"] if total > 0 else COLORS["success"]
+        )
+
+
+# =============================================================================
+# Activity Log (Dark Grey Container + Black Terminal)
+# =============================================================================
+class ActivityLog(ctk.CTkFrame):
+    """Activity log with dark grey bg and black terminal — per design guide."""
+    
+    def __init__(self, parent):
+        super().__init__(
+            parent, fg_color=COLORS["log_outer"], corner_radius=12,
+            border_width=3, border_color=COLORS["thick_border"]
+        )
+        
+        self.title_label = ctk.CTkLabel(
+            self, text="ACTIVITY LOG", font=("Segoe UI", 14, "bold"),
+            text_color=("#000000", "#ffffff"), anchor="w"
+        )
+        self.title_label.pack(fill="x", padx=16, pady=(12, 8))
+        
+        # Black terminal inside
         self.textbox = ctk.CTkTextbox(
-            self, font=("SF Mono", 11),
-            fg_color=COLORS["bg"],
-            text_color=COLORS["text_secondary"],
+            self, font=("Consolas", 11),
+            fg_color=COLORS["log_inner"],
+            text_color=("#b0b0b0", "#a0a0a0"),
             corner_radius=8, height=120
         )
-        self.textbox.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        self.textbox.pack(fill="both", expand=True, padx=12, pady=(0, 12))
         self.textbox.configure(state="disabled")
         
         # Define tags for coloring
-        self.textbox.tag_config("proc", foreground="#5ac8fa")  # Light Blue
-        self.textbox.tag_config("db", foreground="#ffcc00")    # Yellow
-        self.textbox.tag_config("cloud", foreground="#af52de") # Purple
-        self.textbox.tag_config("whatsapp", foreground="#34c759") # Green
-        self.textbox.tag_config("server", foreground="#007aff") # Blue
-        self.textbox.tag_config("error", foreground="#ff3b30") # Red
-        self.textbox.tag_config("timestamp", foreground=COLORS["text_secondary"][0])
+        self.textbox.tag_config("proc", foreground="#5ac8fa")
+        self.textbox.tag_config("db", foreground="#ffcc00")
+        self.textbox.tag_config("cloud", foreground="#af52de")
+        self.textbox.tag_config("whatsapp", foreground="#34c759")
+        self.textbox.tag_config("server", foreground="#007aff")
+        self.textbox.tag_config("error", foreground="#ff3b30")
+        self.textbox.tag_config("timestamp", foreground="#888888")
     
     def add_log(self, message: str, level: str = "info"):
         timestamp = datetime.now().strftime("%H:%M:%S")
         
-        # Default icon/style
         icon = "•"
         tag = "info"
         display_msg = message
 
-        # Parse source and assign icon
-        # Message format usually: "[Source] Content" or "[Source] Logger | Content"
         lower_msg = message.lower()
         
         if "app.processor" in lower_msg or "processing" in lower_msg:
-            icon = "⚙️" # Gear
+            icon = "⚙️"
             tag = "proc"
-            # Clean up message for cleaner display
             display_msg = message.replace("app.processor |", "").strip()
             if display_msg.startswith("[Worker]"): display_msg = display_msg.replace("[Worker]", "").strip()
             display_msg = f"Processor | {display_msg}"
             
         elif "app.db" in lower_msg or "database" in lower_msg:
-            icon = "🗄️" # File Cabinet
+            icon = "🗄️"
             tag = "db"
             display_msg = message.replace("app.db |", "").strip()
             if display_msg.startswith("[Worker]"): display_msg = display_msg.replace("[Worker]", "").strip()
             display_msg = f"Database | {display_msg}"
             
         elif "app.cloud" in lower_msg or "drive" in lower_msg:
-            icon = "☁️" # Cloud
+            icon = "☁️"
             tag = "cloud"
             display_msg = message.replace("app.cloud |", "").strip()
             if display_msg.startswith("[Worker]"): display_msg = display_msg.replace("[Worker]", "").strip()
             display_msg = f"Cloud | {display_msg}"
             
         elif "whatsapp" in lower_msg:
-            icon = "💬" # Speech Balloon
+            icon = "💬"
             tag = "whatsapp"
             if display_msg.startswith("[WhatsApp]"): display_msg = display_msg.replace("[WhatsApp]", "").strip()
             display_msg = f"WhatsApp | {display_msg}"
             
         elif "server" in lower_msg:
-            icon = "🌐" # Globe
+            icon = "🌐"
             tag = "server"
             if display_msg.startswith("[Server]"): display_msg = display_msg.replace("[Server]", "").strip()
             display_msg = f"Server | {display_msg}"
@@ -554,44 +695,207 @@ class ActivityLog(ctk.CTkFrame):
             tag = "error"
         elif level == "success":
             icon = "✓"
-            tag = "whatsapp" # Use green for success generally
+            tag = "whatsapp"
 
         self.textbox.configure(state="normal")
         
-        self.textbox.configure(state="normal")
-        
-        # Insert message in default color first at the top
         self.textbox.insert("1.0", f"{display_msg}\n")
         
-        # Then insert the colored prefix at the very beginning (pushing the message to the right)
         prefix = f"{timestamp}  {icon}  "
         self.textbox.insert("1.0", prefix, (tag,))
-        
-        
-        # No line limit - keep all logs for full history
         
         self.textbox.configure(state="disabled")
 
 
 # =============================================================================
-# People List
+# Folder Choice Popup (Hover Menu)
+# =============================================================================
+class FolderChoicePopup(ctk.CTkToplevel):
+    """Small floating menu to choose between Local and Cloud folders."""
+    
+    def __init__(self, parent, x, y, person_name, on_local, on_cloud):
+        super().__init__(parent)
+        self.overrideredirect(True)
+        self.attributes("-topmost", True)
+        
+        # Windows-specific transparency fix for rounded corners
+        if sys.platform.startswith("win"):
+            self.attributes("-transparentcolor", "#000001")
+            self.configure(fg_color="#000001")
+        else:
+            self.configure(fg_color="transparent")
+        
+        # Match appearance mode
+        curr_mode = ctk.get_appearance_mode()
+        bg_color = COLORS["bg_card"][1] if curr_mode == "Dark" else COLORS["bg_card"][0]
+        
+        # Border frame (black/dark border)
+        self.outer_frame = ctk.CTkFrame(self, fg_color=COLORS["thick_border"], corner_radius=12)
+        self.outer_frame.pack(padx=0, pady=0)
+        
+        self.frame = ctk.CTkFrame(self.outer_frame, fg_color=bg_color, corner_radius=10, border_width=0)
+        self.frame.pack(padx=2, pady=2)
+        
+        # Position slightly overlapping with cursor so we are 'inside' it immediately
+        self.geometry(f"+{x-5}+{y-5}")
+        
+        # Buttons
+        self.btn_local = ctk.CTkButton(
+            self.frame, text="📁  Local Explorer", height=32, width=150, corner_radius=6,
+            fg_color="transparent", hover_color=("#f0f0f0", "#3a3a3c"),
+            text_color=COLORS["text_primary"], anchor="w",
+            font=("Segoe UI", 11),
+            command=lambda: [on_local(), self.destroy()]
+        )
+        self.btn_local.pack(pady=(8, 2), padx=8)
+        
+        self.btn_cloud = ctk.CTkButton(
+            self.frame, text="☁  Cloud Drive", height=32, width=150, corner_radius=6,
+            fg_color="transparent", hover_color=("#f0f0f0", "#3a3a3c"),
+            text_color=COLORS["text_primary"], anchor="w",
+            font=("Segoe UI", 11),
+            command=lambda: [on_cloud(), self.destroy()]
+        )
+        self.btn_cloud.pack(pady=(2, 8), padx=8)
+        
+        # Allow a small grace period before enabling auto-close on leave
+        # This prevents the popup from vanishing if it spawns and immediately 
+        # triggers a 'Leave' because of cursor jitter.
+        self._can_close = False
+        self.after(200, self._enable_close)
+        
+        # Bind leave to the outer container
+        self.outer_frame.bind("<Leave>", self._on_mouse_leave)
+        self.btn_local.bind("<Enter>", lambda e: self._cancel_close())
+        self.btn_cloud.bind("<Enter>", lambda e: self._cancel_close())
+
+    def _enable_close(self):
+        self._can_close = True
+        # Start periodic position checking
+        self._check_position_loop()
+
+    def _on_mouse_leave(self, event):
+        if self._can_close:
+            # Short delay to check if we really left (vs moving between buttons)
+            self.after(100, self._check_really_left)
+
+    def _check_really_left(self):
+        if not self.winfo_exists(): return
+        
+        # Get mouse position relative to screen
+        mx = self.winfo_pointerx()
+        my = self.winfo_pointery()
+        
+        # Get window geometry
+        wx = self.winfo_rootx()
+        wy = self.winfo_rooty()
+        ww = self.winfo_width()
+        wh = self.winfo_height()
+        
+        # If mouse is outside the window bounds plus a small padding
+        padding = 10
+        if not (wx-padding <= mx <= wx+ww+padding and wy-padding <= my <= wy+wh+padding):
+            self.destroy()
+
+    def _check_position_loop(self):
+        """Continuously check if mouse is still near the popup."""
+        if not self.winfo_exists(): return
+        
+        try:
+            mx = self.winfo_pointerx()
+            my = self.winfo_pointery()
+            
+            wx = self.winfo_rootx()
+            wy = self.winfo_rooty()
+            ww = self.winfo_width()
+            wh = self.winfo_height()
+            
+            # Larger padding for continuous check
+            padding = 20
+            if not (wx-padding <= mx <= wx+ww+padding and wy-padding <= my <= wy+wh+padding):
+                self.destroy()
+                return
+            
+            # Check again in 100ms
+            self.after(100, self._check_position_loop)
+        except:
+            # If any error, just close
+            try:
+                self.destroy()
+            except:
+                pass
+
+    def _cancel_close(self):
+        # Prevent closing if mouse is over buttons
+        pass
+
+
+# =============================================================================
+# People List (Pill-shaped items per Design Guide)
 # =============================================================================
 class PeopleList(ctk.CTkScrollableFrame):
-    """Simple list of identified persons."""
+    """Person list with pill-shaped items — thick black border, white bg."""
     
     def __init__(self, parent):
         super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12)
         self._last_hash = None
+        self._hover_id = None
+        self._popup = None
     
 
+    def _open_person_folder(self, person_name):
+        """Open the specific person's folder in file explorer."""
+        try:
+            from app.config import get_config
+            config = get_config()
+            folder_path = config.people_dir / person_name
+            if folder_path.exists():
+                os.startfile(str(folder_path))
+        except Exception:
+            pass
+
+    def _open_cloud_folder(self, person_name):
+        """Determine cloud URL and open in browser."""
+        def task():
+            try:
+                from app.cloud import get_cloud
+                cloud = get_cloud()
+                if cloud.is_enabled:
+                    # This might take a second if not cached
+                    folder_id = cloud.ensure_folder_path(["People", person_name])
+                    if folder_id:
+                        url = f"https://drive.google.com/drive/folders/{folder_id}"
+                        webbrowser.open(url)
+            except Exception:
+                pass
+        threading.Thread(target=task, daemon=True).start()
+
+    def _close_popup(self):
+        """Close the popup if it exists."""
+        if self._popup and self._popup.winfo_exists():
+            try:
+                self._popup.destroy()
+            except:
+                pass
+        self._popup = None
+
+    def _show_choice_popup(self, x, y, person_name):
+        """Show the floating choice menu."""
+        if self._popup and self._popup.winfo_exists():
+            self._popup.destroy()
+        
+        self._popup = FolderChoicePopup(
+            self, x, y, person_name,
+            on_local=lambda: self._open_person_folder(person_name),
+            on_cloud=lambda: self._open_cloud_folder(person_name)
+        )
+
     def update_persons(self, persons: list, enrollments: dict):
-        # We need to detect specific changes to highlight them
         current_counts = {}
         for p in persons:
             name = enrollments.get(p.id).user_name if p.id in enrollments else p.name
             current_counts[name] = p.face_count
 
-        # Check for changes if we have history
         changes = []
         if hasattr(self, "_last_counts"):
             for name, count in current_counts.items():
@@ -601,11 +905,8 @@ class PeopleList(ctk.CTkScrollableFrame):
         
         self._last_counts = current_counts
 
-        # Check if we need to rebuild the layout
         data_hash = str([(p.id, p.name, p.face_count) for p in persons])
         if data_hash == self._last_hash:
-            # Even if hash matches (unlikely if counts changed), we might still want to highlight if we missed it?
-            # Actually, if count changed, hash changed.
             pass
         else:
             self._last_hash = data_hash
@@ -614,44 +915,81 @@ class PeopleList(ctk.CTkScrollableFrame):
                 w.destroy()
             
             if not persons:
-                ctk.CTkLabel(self, text="No people detected yet", font=("SF Pro Display", 13), text_color=COLORS["text_secondary"]).pack(pady=20)
+                ctk.CTkLabel(self, text="No people detected yet", font=("Segoe UI", 13), text_color=COLORS["text_secondary"]).pack(pady=20)
                 return
             
             for person in persons:
                 enrollment = enrollments.get(person.id)
                 name = enrollment.user_name if enrollment else person.name
                 icon = "✓ " if enrollment else ""
+                p_name = person.name # Current folder name
                 
-                row = ctk.CTkFrame(self, fg_color="transparent")
-                row.pack(fill="x", padx=5, pady=2)
+                # Pill-shaped row: thick black border, fully rounded, white bg
+                row = ctk.CTkFrame(
+                    self, fg_color=COLORS["bg_card"], corner_radius=50,
+                    border_width=2, border_color=COLORS["thick_border"],
+                    height=36
+                )
+                row.pack(fill="x", padx=4, pady=3)
+                row.pack_propagate(False)
+                row.configure(cursor="hand2")
                 
-                ctk.CTkLabel(row, text=f"{icon}{name}", font=("SF Pro Display", 13), text_color=COLORS["text_primary"]).pack(side="left")
-                ctk.CTkLabel(row, text=f"{person.face_count} photos", font=("SF Pro Display", 12), text_color=COLORS["text_secondary"]).pack(side="right")
+                # Hover effect & Popup trigger
+                def on_enter(e, r=row, pn=p_name): 
+                    r.configure(fg_color=("#f2f2f2", "#3a3a3c"))
+                    # Start timer for popup
+                    if self._hover_id: self.after_cancel(self._hover_id)
+                    self._hover_id = self.after(600, lambda: self._show_choice_popup(e.x_root, e.y_root, pn))
+
+                def on_leave(e, r=row): 
+                    r.configure(fg_color=COLORS["bg_card"])
+                    # Cancel timer if popup hasn't appeared yet
+                    if self._hover_id:
+                        self.after_cancel(self._hover_id)
+                        self._hover_id = None
+                    # Don't close popup immediately - let the popup's own tracking handle it
+                
+                # Click handler (still opens local immediately as quick action)
+                def on_click(e, pn=p_name): 
+                    if self._hover_id: self.after_cancel(self._hover_id)
+                    self._open_person_folder(pn)
+                
+                row.bind("<Enter>", on_enter)
+                row.bind("<Leave>", on_leave)
+                row.bind("<Button-1>", on_click)
+                
+                name_lbl = ctk.CTkLabel(
+                    row, text=f"{icon}{name}", font=("Segoe UI", 12),
+                    text_color=COLORS["text_primary"]
+                )
+                name_lbl.pack(side="left", padx=(16, 5), pady=4)
+                name_lbl.bind("<Button-1>", on_click)
+                name_lbl.bind("<Enter>", on_enter)
+                
+                count_lbl = ctk.CTkLabel(
+                    row, text=f"{person.face_count}", font=("Segoe UI", 12),
+                    text_color=COLORS["text_secondary"]
+                )
+                count_lbl.pack(side="right", padx=(5, 16), pady=4)
+                count_lbl.bind("<Button-1>", on_click)
+                count_lbl.bind("<Enter>", on_enter)
         
-        # Trigger highlights for changes
         for name in changes:
             self.highlight_person(name)
     
     def highlight_person(self, name_to_find):
         """Find and highlight a person in the list."""
-        # Normalize search name
         search = name_to_find.lower().strip()
         found_widget = None
         
-        # Search through children rows
         for row in self.winfo_children():
-            # The structure is Frame -> [Label(name), Label(count)]
-            # We need to access the name label
             children = row.winfo_children()
             if not children: continue
             
-            # First child is the name label (usually)
             name_lbl = children[0]
             if not isinstance(name_lbl, ctk.CTkLabel): continue
             
-            # Check text
             txt = name_lbl.cget("text").lower()
-            # Remove "✓ " prefix if present
             if txt.startswith("✓ "): txt = txt[2:]
             
             if search in txt:
@@ -659,12 +997,10 @@ class PeopleList(ctk.CTkScrollableFrame):
                 break
         
         if found_widget:
-            # Flash animation
             orig_color = found_widget.cget("fg_color")
             flash_color = COLORS["accent"]
             
             def flash(step):
-                # Guard: widget may have been destroyed by a refresh cycle
                 try:
                     if not found_widget.winfo_exists():
                         return
@@ -673,24 +1009,18 @@ class PeopleList(ctk.CTkScrollableFrame):
                 
                 if step > 5:
                     try:
-                        found_widget.configure(fg_color="transparent") # Reset
+                        found_widget.configure(fg_color=COLORS["bg_card"])
                     except Exception:
                         pass
                     return
-                # Toggle
-                c = flash_color if step % 2 == 0 else "transparent"
+                c = flash_color if step % 2 == 0 else COLORS["bg_card"]
                 try:
                     found_widget.configure(fg_color=c)
                 except Exception:
-                    return  # Widget was destroyed, stop flashing
+                    return
                 self.after(200, lambda: flash(step + 1))
             
             flash(0)
-            
-            # Scroll to make visible (rudimentary)
-            # CTkScrollableFrame doesn't expose easy 'scroll_to' for arbitrary widgets easily 
-            # without accessing internal canvas. 
-            # We'll just highlight for now.
 
 
 # =============================================================================
@@ -703,7 +1033,7 @@ class ProcessManager:
         self.worker_proc = None
         self.server_proc = None
         self.whatsapp_proc = None
-        self.on_output = on_output  # Callback for output lines
+        self.on_output = on_output
         self._reader_threads = []
     
     def start(self):
@@ -711,11 +1041,9 @@ class ProcessManager:
         if self.is_running():
             return
         
-        # Environment with PYTHONPATH set to include backend
         env = os.environ.copy()
         env["PYTHONPATH"] = str(BACKEND_DIR) + os.pathsep + str(FRONTEND_DIR) + os.pathsep + env.get("PYTHONPATH", "")
         
-        # Start worker process from project root (so EventRoot path is correct)
         try:
             self.worker_proc = subprocess.Popen(
                 [sys.executable, "-c", 
@@ -728,7 +1056,6 @@ class ProcessManager:
                 universal_newlines=True,
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
-            # Start output reader thread
             t = threading.Thread(target=self._read_output, args=(self.worker_proc, "Worker"), daemon=True)
             t.start()
             self._reader_threads.append(t)
@@ -737,7 +1064,6 @@ class ProcessManager:
                 self.on_output(f"Worker start failed: {e}", "error")
             return
         
-        # Start frontend server from project root
         try:
             self.server_proc = subprocess.Popen(
                 [sys.executable, "-c",
@@ -757,7 +1083,6 @@ class ProcessManager:
             if self.on_output:
                 self.on_output(f"Server start failed: {e}", "error")
 
-        # Start WhatsApp Sender
         try:
             self.whatsapp_proc = subprocess.Popen(
                 [sys.executable, "whatsapp_tool/db_whatsapp_sender.py"],
@@ -781,17 +1106,14 @@ class ProcessManager:
         try:
             for line in iter(proc.stdout.readline, ''):
                 if line and self.on_output:
-                    # Clean up the line
                     line = line.strip()
                     if line:
-                        # Show all output for debugging, with level based on content
                         line_lower = line.lower()
                         if "error" in line_lower or "exception" in line_lower or "traceback" in line_lower:
                             self.on_output(f"[{name}] {line}", "error")
                         elif "warning" in line_lower:
                             self.on_output(f"[{name}] {line}", "warning")
-                        elif line.startswith("2026-"):  # Timestamped log
-                            # Extract message after timestamp
+                        elif line.startswith("2026-"):
                             parts = line.split("|", 2)
                             if len(parts) >= 3:
                                 logger = parts[1].strip()
@@ -844,34 +1166,32 @@ class ProcessManager:
 # Main Application
 # =============================================================================
 class WeddingFFApp(ctk.CTk):
-    """Main application window."""
+    """Main application window — Design Guide Layout."""
     
     def __init__(self):
         super().__init__()
         
-        self.title("WeddingFFapp")
-        self.geometry("900x750")
+        self.title("Wedding FaceForward")
+        self.geometry("1050x800")
         self.configure(fg_color=COLORS["bg"])
         
         ctk.set_appearance_mode("light")
         
         self.config = get_config()
-        # Don't keep persistent DB connection in main app to avoid conflicts with worker
-        # Use get_db() on-demand instead
         
         self.last_photo_count = 0
         self.last_face_count = 0
         self.last_person_count = 0
         self.last_upload_stats = {}
         
-        # Create timestamped session log file in logs/ directory
+        # Session log
         logs_dir = BASE_DIR / "logs"
-        logs_dir.mkdir(exist_ok=True)  # Create logs directory if it doesn't exist
+        logs_dir.mkdir(exist_ok=True)
         
         session_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.session_log_path = logs_dir / f"session_{session_timestamp}.txt"
         try:
-            self.session_log_file = open(self.session_log_path, 'w', encoding='utf-8', buffering=1)  # Line buffering
+            self.session_log_file = open(self.session_log_path, 'w', encoding='utf-8', buffering=1)
             self.session_log_file.write(f"=== Wedding Face Forward Session Log ===\n")
             self.session_log_file.write(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             self.session_log_file.write(f"=" * 50 + "\n\n")
@@ -881,7 +1201,6 @@ class WeddingFFApp(ctk.CTk):
         
         self._create_ui()
         
-        # Create process manager with output callback
         self.process_manager = ProcessManager(on_output=self._on_worker_output)
         
         self.running = True
@@ -891,10 +1210,8 @@ class WeddingFFApp(ctk.CTk):
     
     def _on_worker_output(self, message, level):
         """Handle output from worker/server processes."""
-        # Add to UI
         self.after(0, lambda: self.activity_log.add_log(message, level))
         
-        # Write to session log file
         if self.session_log_file:
             try:
                 timestamp = datetime.now().strftime("%H:%M:%S")
@@ -903,122 +1220,127 @@ class WeddingFFApp(ctk.CTk):
                 print(f"Warning: Could not write to session log: {e}")
     
     def _create_ui(self):
-        # Header
+        # =====================================================================
+        # ZONE 1: Header
+        # =====================================================================
         header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=30, pady=(25, 15))
+        header.pack(fill="x", padx=24, pady=(20, 12))
         
-        ctk.CTkLabel(header, text="Wedding Face Forward", font=("SF Pro Display", 24, "bold"), text_color=COLORS["text_primary"]).pack(side="left")
+        # Title
+        ctk.CTkLabel(
+            header, text="Wedding FaceForward",
+            font=("Segoe UI", 26, "bold"), text_color=COLORS["text_primary"]
+        ).pack(side="left")
         
-        # Right side controls
+        # Right controls
         controls = ctk.CTkFrame(header, fg_color="transparent")
         controls.pack(side="right")
         
-        self.status_indicator = StatusIndicator(controls)
-        self.status_indicator.pack(side="left", padx=(0, 15))
+        # System health indicator (all workers)
+        self.health_indicator = SystemHealthIndicator(controls)
+        self.health_indicator.pack(side="left", padx=(0, 16))
         
-        self.theme_btn = AnimatedButton(
-            controls, text="◑  Theme", width=100, height=36, corner_radius=8,
-            fg_color=COLORS["bg_card"], text_color=COLORS["text_primary"],
-            hover_color=("#e5e5e5", "#3a3a3c"), font=("SF Pro Display", 13),
-            command=self._toggle_theme
-        )
-        self.theme_btn.pack(side="left", padx=(0, 10))
-
-        self.start_stop_btn = AnimatedButton(
-            controls, text="▶  Start", width=100, height=36, corner_radius=8,
+        self.status_indicator = StatusIndicator(controls)
+        self.status_indicator.pack(side="left", padx=(0, 16))
+        
+        # START button — pill-shaped, bright green
+        self.start_stop_btn = ctk.CTkButton(
+            controls, text="START", width=110, height=38, corner_radius=50,
             fg_color=COLORS["success"], hover_color=("#2aa64a", "#248a3d"),
-            font=("SF Pro Display", 13, "bold"),
+            font=("Segoe UI", 13, "bold"), text_color="#ffffff",
             command=self._toggle_system
         )
         self.start_stop_btn.pack(side="left", padx=(0, 10))
         
-        AnimatedButton(
-            controls, text="Open Folder", width=100, height=36, corner_radius=8,
-            fg_color=COLORS["border"], text_color=COLORS["text_primary"],
-            hover_color=("#d0d0d0", "#48484a"), font=("SF Pro Display", 13),
+        # Theme toggle — circular with sun icon
+        self.theme_btn = ctk.CTkButton(
+            controls, text="☀", width=38, height=38, corner_radius=50,
+            fg_color=COLORS["bg_card"], text_color=("#cc8800", "#ffcc00"),
+            hover_color=("#e5e5e5", "#3a3a3c"), font=("Segoe UI", 18),
+            border_width=2, border_color=COLORS["thick_border"],
+            command=self._toggle_theme
+        )
+        self.theme_btn.pack(side="left", padx=(0, 10))
+        
+        # OPEN FOLDER — pill-shaped, light grey
+        ctk.CTkButton(
+            controls, text="OPEN FOLDER", width=120, height=38, corner_radius=50,
+            fg_color=("#e0e0e0", "#3a3a3c"), hover_color=("#d0d0d0", "#48484a"),
+            text_color=COLORS["text_primary"], font=("Segoe UI", 13, "bold"),
             command=self._open_event_folder
         ).pack(side="left")
         
-        # Stats Row
+        # =====================================================================
+        # ZONE 2: Top Statistics Row (5 cards)
+        # =====================================================================
         stats_frame = ctk.CTkFrame(self, fg_color="transparent")
-        stats_frame.pack(fill="x", padx=30, pady=(0, 15))
-        for i in range(4):
+        stats_frame.pack(fill="x", padx=24, pady=(0, 12))
+        for i in range(5):
             stats_frame.columnconfigure(i, weight=1)
         
-        self.photos_card = StatCard(stats_frame, "Photos", "0")
-        self.photos_card.grid(row=0, column=0, padx=(0, 8), sticky="nsew")
+        self.photos_card = StatCard(stats_frame, "Total Photos", "0")
+        self.photos_card.grid(row=0, column=0, padx=(0, 6), sticky="nsew")
         
-        self.faces_card = StatCard(stats_frame, "Faces", "0")
-        self.faces_card.grid(row=0, column=1, padx=8, sticky="nsew")
+        self.faces_card = StatCard(stats_frame, "Total Faces", "0")
+        self.faces_card.grid(row=0, column=1, padx=6, sticky="nsew")
         
-        self.people_card = StatCard(stats_frame, "People", "0")
-        self.people_card.grid(row=0, column=2, padx=8, sticky="nsew")
+        self.people_card = StatCard(stats_frame, "No of Persons", "0")
+        self.people_card.grid(row=0, column=2, padx=6, sticky="nsew")
         
-        self.enrolled_card = StatCard(stats_frame, "Enrolled", "0", COLORS["accent"])
-        self.enrolled_card.grid(row=0, column=3, padx=(8, 0), sticky="nsew")
+        self.enrolled_card = StatCard(stats_frame, "Enrolled", "0")
+        self.enrolled_card.grid(row=0, column=3, padx=6, sticky="nsew")
         
-        # Main Content - Modular Layout with PanedWindow
-        # We need a container for the PanedWindow that respects CTk geometry
-        container = ctk.CTkFrame(self, fg_color="transparent")
-        container.pack(fill="both", expand=True, padx=30, pady=(0, 15))
+        # Card 5: Cloud & Local Match? (highlighted)
+        self.match_card = StatCard(stats_frame, "Cloud & Local\nMatch?", "—", highlight=True)
+        self.match_card.grid(row=0, column=4, padx=(6, 0), sticky="nsew")
         
-        # Use tkinter.PanedWindow for resizability
-        # We must align bg color with theme. 
-        # Note: 'bg' in PanedWindow doesn't update automatically on theme change easily without recreation/config.
-        # We'll set a neutral or match light mode initially, and update in _toggle_theme.
-        self.paned_window = tk.PanedWindow(
-            container, orient="horizontal", 
-            sashwidth=6, sashrelief="flat",
-            bg=COLORS["bg"][0], # Initial light mode bg
-            bd=0
-        )
-        self.paned_window.pack(fill="both", expand=True)
-
-        # --- LEFT PANE (Operations) ---
-        self.left_pane = ctk.CTkFrame(self.paned_window, fg_color="transparent")
-        # No pack/grid here, paned_window manages it
+        # =====================================================================
+        # ZONE 3: Main Content Area (Left ~70% + Right ~30%)
+        # =====================================================================
+        main_content = ctk.CTkFrame(self, fg_color="transparent")
+        main_content.pack(fill="both", expand=True, padx=24, pady=(0, 16))
+        main_content.columnconfigure(0, weight=7)
+        main_content.columnconfigure(1, weight=3)
+        main_content.rowconfigure(0, weight=0)
+        main_content.rowconfigure(1, weight=1)
         
-        # Top Left: Status Modules (Processing & Cloud)
-        # We'll put these in a sub-frame
-        status_modules = ctk.CTkFrame(self.left_pane, fg_color="transparent")
-        status_modules.pack(fill="x", pady=(0, 10))
-        status_modules.columnconfigure(0, weight=1)
-        status_modules.columnconfigure(1, weight=1)
+        # ----- LEFT COLUMN -----
         
-        self.proc_widget = ProcessingWidget(status_modules)
-        self.proc_widget.grid(row=0, column=0, padx=(0, 5), sticky="ew")
+        # 3A Top: Status Cards Row (Processing, Cloud Sync, Stuck Photos)
+        status_row = ctk.CTkFrame(main_content, fg_color="transparent")
+        status_row.grid(row=0, column=0, sticky="nsew", padx=(0, 10), pady=(0, 10))
+        status_row.columnconfigure(0, weight=1)
+        status_row.columnconfigure(1, weight=1)
+        status_row.columnconfigure(2, weight=1)
         
-        self.cloud_widget = CloudWidget(status_modules)
-        self.cloud_widget.grid(row=0, column=1, padx=(5, 0), sticky="ew")
-
-        # Activity Log (Below status modules)
-        self.activity_log = ActivityLog(self.left_pane)
-        self.activity_log.pack(fill="both", expand=True)
+        self.proc_widget = ProcessingWidget(status_row)
+        self.proc_widget.grid(row=0, column=0, padx=(0, 5), sticky="nsew")
+        
+        self.cloud_widget = CloudWidget(status_row)
+        self.cloud_widget.grid(row=0, column=1, padx=5, sticky="nsew")
+        
+        self.stuck_card = StuckPhotosCard(status_row)
+        self.stuck_card.grid(row=0, column=2, padx=(5, 0), sticky="nsew")
+        
+        # 3A Bottom: Activity Log
+        self.activity_log = ActivityLog(main_content)
+        self.activity_log.grid(row=1, column=0, sticky="nsew", padx=(0, 10))
         self.activity_log.add_log("App started", "success")
         
-        # Add Left Pane to PanedWindow
-        # We can't add CTk widgets directly to PanedWindow easily because they anticipate pack/grid geometry managers usually?
-        # Actually standard tkinter widgets work. CTkFrame is a subclass of Frame (usually).
-        # Let's try adding directly.
-        self.paned_window.add(self.left_pane, minsize=300)
-
-        # --- RIGHT PANE (Data/People) ---
-        self.right_pane = ctk.CTkFrame(self.paned_window, fg_color="transparent")
+        # ----- RIGHT COLUMN (Sidebar — People List) -----
+        right_sidebar = ctk.CTkFrame(
+            main_content, fg_color=COLORS["bg_card"], corner_radius=12,
+            border_width=3, border_color=COLORS["thick_border"]
+        )
+        right_sidebar.grid(row=0, column=1, rowspan=2, sticky="nsew")
         
-        people_header = ctk.CTkFrame(self.right_pane, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
-        people_header.pack(fill="both", expand=True)
+        ctk.CTkLabel(
+            right_sidebar, text="PEOPLE", font=("Segoe UI", 14, "bold"),
+            text_color=COLORS["text_primary"]
+        ).pack(anchor="w", padx=16, pady=(14, 8))
         
-        ctk.CTkLabel(people_header, text="People", font=("SF Pro Display", 15, "bold"), text_color=COLORS["text_primary"]).pack(anchor="w", padx=20, pady=(15, 10))
-        
-        self.people_list = PeopleList(people_header)
-        self.people_list.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        
-        self.paned_window.add(self.right_pane, minsize=300)
-        
-    def _update_paned_window_bg(self):
-        mode = ctk.get_appearance_mode()
-        bg = COLORS["bg"][1] if mode == "Dark" else COLORS["bg"][0]
-        self.paned_window.configure(bg=bg)
+        self.people_list = PeopleList(right_sidebar)
+        self.people_list.pack(fill="both", expand=True, padx=10, pady=(0, 12))
     
     def _toggle_system(self):
         """Start or stop the system."""
@@ -1032,11 +1354,12 @@ class WeddingFFApp(ctk.CTk):
         self.status_indicator.set_starting()
         self.start_stop_btn.configure(state="disabled", text="Starting...")
         self.activity_log.add_log("Starting system...", "info")
+        self._log_to_session("[APP] User clicked START button")
         
         def start_async():
             try:
                 self.process_manager.start()
-                time.sleep(2)  # Give processes time to start
+                time.sleep(2)
                 self.after(0, self._on_system_started)
             except Exception as e:
                 self.after(0, lambda: self._on_start_error(str(e)))
@@ -1047,18 +1370,18 @@ class WeddingFFApp(ctk.CTk):
         """Called when system has started."""
         self.status_indicator.set_running()
         self.start_stop_btn.configure(
-            state="normal", text="■  Stop",
+            state="normal", text="■  STOP",
             fg_color=COLORS["error"], hover_color=("#cc2222", "#d63a3a")
         )
         self.activity_log.add_log("System running! Worker + Web server active", "success")
         self.activity_log.add_log("Web UI: http://localhost:8000", "info")
+        self._log_to_session("[APP] System started successfully")
     
     def _on_start_error(self, error: str):
         """Called on start error."""
         self.status_indicator.set_stopped()
         self.start_stop_btn.configure(
-            state="normal", text="▶  Start",
-
+            state="normal", text="START",
             fg_color=COLORS["success"], hover_color=("#2aa64a", "#248a3d")
         )
         self.activity_log.add_log(f"Start failed: {error}", "error")
@@ -1068,6 +1391,7 @@ class WeddingFFApp(ctk.CTk):
         self.status_indicator.set_stopping()
         self.start_stop_btn.configure(state="disabled", text="Stopping...")
         self.activity_log.add_log("Stopping system...", "info")
+        self._log_to_session("[APP] User clicked STOP button")
         
         def stop_async():
             self.process_manager.stop()
@@ -1080,15 +1404,15 @@ class WeddingFFApp(ctk.CTk):
         """Called when system has stopped."""
         self.status_indicator.set_stopped()
         self.start_stop_btn.configure(
-            state="normal", text="▶  Start",
-
+            state="normal", text="START",
             fg_color=COLORS["success"], hover_color=("#2aa64a", "#248a3d")
         )
         self.activity_log.add_log("System stopped", "info")
+        self._log_to_session("[APP] System stopped successfully")
     
     def _refresh_loop(self):
         while self.running:
-            time.sleep(1) # Faster updates for a smoother, modern feel
+            time.sleep(1)
             if self.running:
                 self.after(0, self._refresh_stats)
     
@@ -1102,6 +1426,7 @@ class WeddingFFApp(ctk.CTk):
             completed = photos_by_status.get("completed", 0) + photos_by_status.get("no_faces", 0)
             errors = photos_by_status.get("error", 0)
             processing = photos_by_status.get("processing", 0)
+            pending = photos_by_status.get("pending", 0)
             
             self.photos_card.update_value(str(total))
             self.faces_card.update_value(str(stats.get("total_faces", 0)))
@@ -1112,31 +1437,26 @@ class WeddingFFApp(ctk.CTk):
             if self.config.incoming_dir.exists():
                 incoming = len([f for f in self.config.incoming_dir.iterdir() if f.is_file() and f.suffix.lower() in self.config.supported_extensions])
             
-            # Compute session progress for the circular progress bar
-            pending = photos_by_status.get("pending", 0)
+            # Progress ring
             session_total = completed + errors + processing + pending
             session_done = completed + errors
             
-            # Update the progress ring
             self.proc_widget.update_progress(session_done, session_total)
 
             if processing > 0:
                 self.proc_widget.start_processing()
             elif session_done >= session_total and session_total > 0:
-                self.proc_widget.stop_processing()  # Keep the "DONE" state
+                self.proc_widget.stop_processing()
             elif incoming > 0:
                 self.proc_widget.start_processing()
                 self.proc_widget.status_label.configure(text="Waiting...", text_color=COLORS["warning"])
-            # self.queue_section.update_row("completed", str(completed))
-            # self.queue_section.update_row("errors", str(errors))
             
-            # Get upload stats with unique photo count
+            # Cloud upload stats
             upload_stats = db.get_upload_stats_unique()
             if upload_stats != self.last_upload_stats:
                 by_status = upload_stats.get('by_status', {})
                 unique_by_status = upload_stats.get('unique_by_status', {})
                 
-                # Get counts
                 pending_total = by_status.get('pending', 0)
                 uploading_total = by_status.get('uploading', 0)
                 completed_total = by_status.get('completed', 0)
@@ -1150,30 +1470,27 @@ class WeddingFFApp(ctk.CTk):
                     self.cloud_widget.stop_uploading()
                     self.cloud_widget.status_label.configure(text="Synced")
 
-                # self.cloud_section.update_row("pending", str(pending_total))
-                # self.cloud_section.update_row("uploading", str(uploading_total))
-                # Show unique photos / total files for clarity when different
-                # if completed_unique != completed_total:
-                #     self.cloud_section.update_row("uploaded", f"{completed_unique} ({completed_total})")
-                # else:
-                #     self.cloud_section.update_row("uploaded", str(completed_total))
-                # self.cloud_section.update_row("failed", str(failed_total))
                 self.last_upload_stats = upload_stats
+            
+            # ----- NEW FEATURE 1: Cloud & Local Match Check -----
+            # Cloud "completed" uploads should match the expected uploads from completed photos.
+            # Expected = all completed photos should have all their file copies uploaded.
+            # We check: all completed photos have ALL their upload_queue entries as 'completed'.
+            self._update_cloud_local_match(db, photos_by_status, upload_stats)
+            
+            # ----- NEW FEATURE 2: Stuck Photos -----
+            self._update_stuck_photos(db, photos_by_status)
+            
+            # ----- NEW FEATURE 3: System Health Indicator -----
+            self._update_system_health(processing, pending, incoming, upload_stats)
             
             if total > self.last_photo_count:
                 self.activity_log.add_log(f"{total - self.last_photo_count} new photo(s)", "info")
             if stats.get("total_faces", 0) > self.last_face_count:
                 self.activity_log.add_log(f"{stats['total_faces'] - self.last_face_count} face(s) detected", "success")
             if stats.get("total_persons", 0) > self.last_person_count:
-                # New person identified
                 new_count = stats.get("total_persons", 0) - self.last_person_count
                 self.activity_log.add_log(f"{new_count} New person(s) identified", "success")
-                
-                # Try to highlight new people if we can find them in the logs or list
-                # Since we don't have the exact name here easily without querying DB diffs, 
-                # we'll just flash the list or log.
-                # Ideally, we should fetch the latest person added.
-                pass
             
             self.last_photo_count = total
             self.last_face_count = stats.get("total_faces", 0)
@@ -1186,26 +1503,121 @@ class WeddingFFApp(ctk.CTk):
         except Exception as e:
             pass  # Silent fail on refresh
     
+    def _update_cloud_local_match(self, db, photos_by_status, upload_stats):
+        """Check if cloud uploads match local repository state."""
+        try:
+            completed_photos = photos_by_status.get("completed", 0) + photos_by_status.get("no_faces", 0)
+            
+            if completed_photos == 0:
+                self.match_card.update_value("—")
+                return
+            
+            by_status = upload_stats.get('by_status', {}) if upload_stats else {}
+            
+            uploads_pending = by_status.get('pending', 0)
+            uploads_uploading = by_status.get('uploading', 0)
+            uploads_completed = by_status.get('completed', 0)
+            uploads_failed = by_status.get('failed', 0)
+            
+            total_uploads = uploads_pending + uploads_uploading + uploads_completed + uploads_failed
+            
+            if total_uploads == 0 and completed_photos > 0:
+                # No uploads queued yet but photos are completed — not matched
+                self.match_card.update_value("NO")
+                self.match_card.value_label.configure(text_color=COLORS["warning"])
+                return
+            
+            # Check: Are all uploads completed (no pending, no uploading, no failed)?
+            all_uploaded = (uploads_pending == 0 and uploads_uploading == 0 and uploads_failed == 0 and uploads_completed > 0)
+            
+            if all_uploaded:
+                self.match_card.update_value("YES ✓")
+                self.match_card.value_label.configure(text_color=COLORS["success"])
+            elif uploads_failed > 0:
+                # Some failed — mismatch detected
+                self.match_card.update_value("NO ✗")
+                self.match_card.value_label.configure(text_color=COLORS["error"])
+            else:
+                # Still uploading / pending
+                self.match_card.update_value("SYNCING")
+                self.match_card.value_label.configure(text_color=COLORS["warning"])
+        except Exception:
+            self.match_card.update_value("—")
+    
+    def _update_stuck_photos(self, db, photos_by_status):
+        """Update stuck photos count — processing + cloud stuck."""
+        try:
+            # Stuck in image analysis processing: photos in 'processing' status
+            # (these should transition to completed quickly, if stuck > 10 min they're stuck)
+            proc_stuck = photos_by_status.get("processing", 0)
+            
+            # Stuck in cloud: uploads in 'uploading' status (should be transient)
+            # NOTE: We do NOT count 'failed' uploads as "stuck" - those are errors, not active work
+            by_status = self.last_upload_stats.get('by_status', {}) if self.last_upload_stats else {}
+            cloud_stuck = by_status.get('uploading', 0)
+            
+            self.stuck_card.update_stuck(proc_stuck, cloud_stuck)
+        except Exception:
+            pass
+    
+    def _update_system_health(self, processing, pending, incoming, upload_stats):
+        """Update system health indicator based on all worker states."""
+        try:
+            if not self.process_manager.is_running():
+                self.health_indicator.set_offline()
+                return
+            
+            # Check if ANY worker is ACTIVELY busy (not just has completed work)
+            # Use fresh upload_stats, not cached data
+            by_status = upload_stats.get('by_status', {}) if upload_stats else {}
+            
+            # Image analysis is busy if: processing photos OR pending photos in database
+            # NOTE: We do NOT check 'incoming' folder - those might be already processed!
+            image_analysis_busy = (processing > 0 or pending > 0)
+            
+            # Cloud upload is busy ONLY if actively uploading or pending (not if just completed)
+            cloud_upload_busy = (by_status.get('pending', 0) > 0 or by_status.get('uploading', 0) > 0)
+            
+            if image_analysis_busy or cloud_upload_busy:
+                self.health_indicator.set_busy()
+            else:
+                self.health_indicator.set_idle()
+        except Exception:
+            pass
+    
+    def _log_to_session(self, message: str):
+        """Write a message directly to the session log file."""
+        if self.session_log_file:
+            try:
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                self.session_log_file.write(f"{timestamp}  •  {message}\n")
+            except Exception as e:
+                print(f"Warning: Could not write to session log: {e}")
+    
     def _open_event_folder(self):
         os.startfile(str(self.config.event_root))
         self.activity_log.add_log("Opened folder", "info")
     
     def _toggle_theme(self):
-        """Toggle frame between light and dark mode."""
+        """Toggle between light and dark mode."""
         curr = ctk.get_appearance_mode()
         new_mode = "Dark" if curr == "Light" else "Light"
         ctk.set_appearance_mode(new_mode)
-        self._update_paned_window_bg()
         self.proc_widget.set_appearance_mode(new_mode)
         self.cloud_widget.set_appearance_mode(new_mode)
+        
+        # Update theme button icon
+        if new_mode == "Dark":
+            self.theme_btn.configure(text="🌙")
+        else:
+            self.theme_btn.configure(text="☀")
 
     def _on_close(self):
-        """Handle window close - also stop services."""
+        """Handle window close — also stop services."""
         if self.process_manager.is_running():
             self.activity_log.add_log("Shutting down...", "info")
             self.process_manager.stop()
         
-        # Close session log file
         if hasattr(self, 'session_log_file') and self.session_log_file:
             try:
                 self.session_log_file.write(f"\n{'=' * 50}\n")

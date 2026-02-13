@@ -82,13 +82,26 @@ class UploadQueueManager:
         self._recover_stuck_uploads()
         
         iteration_count = 0
+        last_idle_reported = False
         while not self._stop_event.is_set():
             try:
                 # Process pending uploads
+                pending_count = len(self.db.get_pending_uploads(limit=self.config.upload_batch_size))
                 self._process_pending_uploads()
                 
                 # Retry failed uploads
+                failed_count = len(self.db.get_failed_uploads(max_retries=self.config.upload_max_retries))
                 self._retry_failed_uploads()
+                
+                # Heartbeat: Report idle status when queue is empty
+                if pending_count == 0 and failed_count == 0 and not last_idle_reported:
+                    stats = self.db.get_upload_stats()
+                    if stats.get('completed', 0) > 0:
+                        logger.info(f"[OK] All uploads complete ({stats['completed']} total). Queue is idle, monitoring for new files...")
+                    last_idle_reported = True
+                elif (pending_count > 0 or failed_count > 0) and last_idle_reported:
+                    # Reset flag when work resumes
+                    last_idle_reported = False
                 
                 # Periodically check for stuck uploads (every ~60 seconds)
                 iteration_count += 1

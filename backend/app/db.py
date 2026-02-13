@@ -604,6 +604,33 @@ class Database:
             created_at=row["created_at"],
         )
     
+    @retry_on_lock()
+    def get_first_face_for_person(self, person_id: int) -> Optional[dict]:
+        """Get the first face record for a person, along with the photo's processed path.
+        
+        Returns dict with keys: bbox_x, bbox_y, bbox_w, bbox_h, processed_path
+        or None if not found.
+        """
+        conn = self.connect()
+        cursor = conn.execute(
+            """SELECT f.bbox_x, f.bbox_y, f.bbox_w, f.bbox_h, p.processed_path
+               FROM faces f
+               JOIN photos p ON f.photo_id = p.id
+               WHERE f.person_id = ? AND p.processed_path IS NOT NULL
+               ORDER BY f.confidence DESC
+               LIMIT 1""",
+            (person_id,)
+        )
+        row = cursor.fetchone()
+        conn.commit()
+        if row:
+            return {
+                "bbox_x": row[0], "bbox_y": row[1],
+                "bbox_w": row[2], "bbox_h": row[3],
+                "processed_path": row[4]
+            }
+        return None
+
     # =========================================================================
     # Enrollment Operations
     # =========================================================================
