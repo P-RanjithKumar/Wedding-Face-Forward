@@ -288,14 +288,29 @@ class CloudManager:
         logger.info(f"Created cloud folder: {name} ({folder_id})")
         return folder_id
 
+    def _get_path_lock(self, path: str) -> threading.Lock:
+        """Get or create a lock specific to a folder path.
+        
+        This allows threads working on DIFFERENT folder paths to proceed
+        in parallel, while threads working on the SAME path serialize
+        their find-or-create operations to prevent duplicate folders.
+        """
+        with self._folder_lock:
+            if not hasattr(self, "_path_locks"):
+                self._path_locks: Dict[str, threading.Lock] = {}
+            if path not in self._path_locks:
+                self._path_locks[path] = threading.Lock()
+            return self._path_locks[path]
+
     def ensure_folder_path(self, path_parts: list[str]) -> Optional[str]:
         """
         Ensure a folder hierarchy exists in Drive.
         
-        Thread-safe: uses a lock to prevent race conditions where multiple
-        threads could create duplicate folders simultaneously. The lock is
-        only held briefly for cache operations, NOT during network calls,
-        to prevent one thread's network retries from blocking all others.
+        Thread-safe: uses per-path locks so that only threads working on the
+        EXACT SAME folder path block each other. The entire find-or-create
+        sequence (network calls included) is held under the path lock to
+        guarantee no two threads can simultaneously discover "missing" and
+        both create the same folder.
         
         Args:
             path_parts: List of folder names, e.g. ["People", "Person_123", "Solo"]
@@ -323,11 +338,11 @@ class CloudManager:
                 current_parent_id = self._folder_cache[current_path_str]
                 continue
             
-            # Acquire lock ONLY for the find-or-create of this single level.
-            # This prevents duplicate folder creation while keeping the lock
-            # duration short — if the network call fails/retries, other threads
-            # working on different folders are NOT blocked.
-            acquired = self._folder_lock.acquire(timeout=30)
+            # Acquire a lock specific to THIS folder path.
+            # This keeps the find+create atomic for the same path,
+            # while threads working on different paths are NOT blocked.
+            path_lock = self._get_path_lock(current_path_str)
+            acquired = path_lock.acquire(timeout=60)
             if not acquired:
                 logger.error(f"Timeout waiting for folder lock (path: {current_path_str})")
                 return None
@@ -338,31 +353,18 @@ class CloudManager:
                     current_parent_id = self._folder_cache[current_path_str]
                     continue
                 
-                # Release lock BEFORE network calls to avoid blocking other threads
-                # during retries. We save parent_id for the network call.
-                parent_for_lookup = current_parent_id
-            finally:
-                self._folder_lock.release()
-            
-            # Network calls happen OUTSIDE the lock
-            try:
-                folder_id = self._find_folder(part, parent_for_lookup)
+                # Both find AND create happen INSIDE the path lock.
+                # This is safe because only threads targeting the same folder
+                # path will contend; other paths proceed in parallel.
+                folder_id = self._find_folder(part, current_parent_id)
                 if not folder_id:
-                    # Need to create — re-acquire lock briefly to prevent duplicates
-                    with self._folder_lock:
-                        # Check cache again (another thread may have created it)
-                        if current_path_str in self._folder_cache:
-                            current_parent_id = self._folder_cache[current_path_str]
-                            continue
-                    
-                    # Create outside the lock
-                    folder_id = self._create_folder(part, parent_for_lookup)
+                    folder_id = self._create_folder(part, current_parent_id)
                     
                     if not folder_id:
-                        logger.error(f"Failed to create cloud folder: {part} (parent: {parent_for_lookup})")
+                        logger.error(f"Failed to create cloud folder: {part} (parent: {current_parent_id})")
                         return None
                 
-                # Update cache with lock
+                # Update cache
                 with self._folder_lock:
                     self._folder_cache[current_path_str] = folder_id
                 
@@ -371,6 +373,8 @@ class CloudManager:
             except Exception as e:
                 logger.error(f"Error ensuring cloud folder '{part}': {e}")
                 return None
+            finally:
+                path_lock.release()
 
         return current_parent_id
 
