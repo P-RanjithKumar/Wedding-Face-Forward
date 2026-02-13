@@ -32,6 +32,7 @@ except ImportError:
 
 import tkinter as tk
 import math
+from PIL import Image, ImageTk, ImageFilter, ImageEnhance
 
 from app.config import get_config
 from app.db import get_db
@@ -711,88 +712,139 @@ class ActivityLog(ctk.CTkFrame):
 # Folder Choice Popup (Hover Menu)
 # =============================================================================
 class FolderChoicePopup(ctk.CTkToplevel):
-    """Small floating menu to choose between Local and Cloud folders."""
+    """Floating popup: face thumbnail + Local / Cloud buttons."""
     
-    def __init__(self, parent, x, y, person_name, on_local, on_cloud):
+    THUMB_W = 240           # thumbnail width (+10% increase)
+    THUMB_H = 300           # thumbnail height
+    BTN_AREA_H = 30         # height for the button row
+    PADDING = 4             # removed padding to accommodate wider image without growing window
+    
+    def __init__(self, parent, x, y, person_name, on_local, on_cloud, thumbnail_path=None):
         super().__init__(parent)
         self.overrideredirect(True)
         self.attributes("-topmost", True)
         
-        # Windows-specific transparency fix for rounded corners
+        # Windows transparency fix for rounded outer corners
         if sys.platform.startswith("win"):
             self.attributes("-transparentcolor", "#000001")
             self.configure(fg_color="#000001")
         else:
             self.configure(fg_color="transparent")
         
-        # Match appearance mode
         curr_mode = ctk.get_appearance_mode()
         bg_color = COLORS["bg_card"][1] if curr_mode == "Dark" else COLORS["bg_card"][0]
         
-        # Border frame (black/dark border)
-        self.outer_frame = ctk.CTkFrame(self, fg_color=COLORS["thick_border"], corner_radius=12)
+        has_thumb = thumbnail_path and Path(thumbnail_path).exists()
+        popup_w = self.THUMB_W + self.PADDING * 2 + 4  # +4 for border
+        popup_h = (self.THUMB_H + self.BTN_AREA_H + self.PADDING * 3 + 4) if has_thumb else (self.BTN_AREA_H + self.PADDING * 2 + 4)
+        
+        # Outer border frame
+        self.outer_frame = ctk.CTkFrame(self, fg_color=COLORS["thick_border"], corner_radius=14)
         self.outer_frame.pack(padx=0, pady=0)
         
-        self.frame = ctk.CTkFrame(self.outer_frame, fg_color=bg_color, corner_radius=10, border_width=0)
+        # Inner card
+        self.frame = ctk.CTkFrame(self.outer_frame, fg_color=bg_color, corner_radius=12, border_width=0)
         self.frame.pack(padx=2, pady=2)
         
-        # Position slightly overlapping with cursor so we are 'inside' it immediately
-        self.geometry(f"+{x-5}+{y-5}")
+        # ---- Thumbnail (clear, clipped to rounded rect) ----
+        self._tk_thumb = None
+        if has_thumb:
+            try:
+                img = Image.open(thumbnail_path).convert("RGBA")
+                
+                # Crop to portrait ratio from center
+                tw, th = self.THUMB_W, self.THUMB_H
+                w, h = img.size
+                target_ratio = tw / th
+                src_ratio = w / h
+                if src_ratio > target_ratio:
+                    # Source is wider — crop sides
+                    new_w = int(h * target_ratio)
+                    left = (w - new_w) // 2
+                    img = img.crop((left, 0, left + new_w, h))
+                else:
+                    # Source is taller — crop top/bottom
+                    new_h = int(w / target_ratio)
+                    top = (h - new_h) // 2
+                    img = img.crop((0, top, w, top + new_h))
+                img = img.resize((tw, th), Image.LANCZOS)
+                
+                # Create rounded mask to clip corners
+                from PIL import ImageDraw
+                radius = 10
+                mask = Image.new("L", (tw, th), 0)
+                draw = ImageDraw.Draw(mask)
+                draw.rounded_rectangle(
+                    [(0, 0), (tw - 1, th - 1)],
+                    radius=radius, fill=255
+                )
+                
+                # Apply mask — composite onto bg color
+                bg_img = Image.new("RGBA", (tw, th), bg_color)
+                bg_img.paste(img, (0, 0), mask)
+                
+                self._tk_thumb = ImageTk.PhotoImage(bg_img.convert("RGB"))
+                
+                thumb_label = tk.Label(
+                    self.frame, image=self._tk_thumb, bd=0,
+                    highlightthickness=0, bg=bg_color
+                )
+                thumb_label.pack(padx=self.PADDING, pady=(self.PADDING, 0))
+            except Exception:
+                pass
         
-        # Buttons
+        # ---- Button row (horizontal) ----
+        btn_row = ctk.CTkFrame(self.frame, fg_color="transparent")
+        btn_row.pack(pady=(3, 4))  # Centered horizontally, increased bottom margin
+        
+        btn_w = 30  # Further reduced width to eliminate horizontal empty space
+        
         self.btn_local = ctk.CTkButton(
-            self.frame, text="📁  Local Explorer", height=32, width=150, corner_radius=6,
-            fg_color="transparent", hover_color=("#f0f0f0", "#3a3a3c"),
-            text_color=COLORS["text_primary"], anchor="w",
-            font=("Segoe UI", 11),
+            btn_row, text="📁 Local", height=26, width=btn_w, corner_radius=13,
+            fg_color=("#e8e8e8", "#2c2c2e"), hover_color=("#d0d0d0", "#3a3a3c"),
+            text_color=COLORS["text_primary"],
+            font=("Segoe UI", 9),
             command=lambda: [on_local(), self.destroy()]
         )
-        self.btn_local.pack(pady=(8, 2), padx=8)
+        self.btn_local.pack(side="left", padx=(0, 2))
         
         self.btn_cloud = ctk.CTkButton(
-            self.frame, text="☁  Cloud Drive", height=32, width=150, corner_radius=6,
-            fg_color="transparent", hover_color=("#f0f0f0", "#3a3a3c"),
-            text_color=COLORS["text_primary"], anchor="w",
-            font=("Segoe UI", 11),
+            btn_row, text="☁ Cloud", height=26, width=btn_w, corner_radius=13,
+            fg_color=("#e8e8e8", "#2c2c2e"), hover_color=("#d0d0d0", "#3a3a3c"),
+            text_color=COLORS["text_primary"],
+            font=("Segoe UI", 9),
             command=lambda: [on_cloud(), self.destroy()]
         )
-        self.btn_cloud.pack(pady=(2, 8), padx=8)
+        self.btn_cloud.pack(side="left", padx=(2, 0))
         
-        # Allow a small grace period before enabling auto-close on leave
-        # This prevents the popup from vanishing if it spawns and immediately 
-        # triggers a 'Leave' because of cursor jitter.
+        # Position slightly overlapping with cursor
+        self.geometry(f"+{x-5}+{y-5}")
+        
+        # Grace period before enabling auto-close
         self._can_close = False
         self.after(200, self._enable_close)
         
-        # Bind leave to the outer container
+        # Leave tracking
         self.outer_frame.bind("<Leave>", self._on_mouse_leave)
         self.btn_local.bind("<Enter>", lambda e: self._cancel_close())
         self.btn_cloud.bind("<Enter>", lambda e: self._cancel_close())
 
     def _enable_close(self):
         self._can_close = True
-        # Start periodic position checking
         self._check_position_loop()
 
     def _on_mouse_leave(self, event):
         if self._can_close:
-            # Short delay to check if we really left (vs moving between buttons)
             self.after(100, self._check_really_left)
 
     def _check_really_left(self):
         if not self.winfo_exists(): return
-        
-        # Get mouse position relative to screen
         mx = self.winfo_pointerx()
         my = self.winfo_pointery()
-        
-        # Get window geometry
         wx = self.winfo_rootx()
         wy = self.winfo_rooty()
         ww = self.winfo_width()
         wh = self.winfo_height()
-        
-        # If mouse is outside the window bounds plus a small padding
         padding = 10
         if not (wx-padding <= mx <= wx+ww+padding and wy-padding <= my <= wy+wh+padding):
             self.destroy()
@@ -800,33 +852,25 @@ class FolderChoicePopup(ctk.CTkToplevel):
     def _check_position_loop(self):
         """Continuously check if mouse is still near the popup."""
         if not self.winfo_exists(): return
-        
         try:
             mx = self.winfo_pointerx()
             my = self.winfo_pointery()
-            
             wx = self.winfo_rootx()
             wy = self.winfo_rooty()
             ww = self.winfo_width()
             wh = self.winfo_height()
-            
-            # Larger padding for continuous check
             padding = 20
             if not (wx-padding <= mx <= wx+ww+padding and wy-padding <= my <= wy+wh+padding):
                 self.destroy()
                 return
-            
-            # Check again in 100ms
             self.after(100, self._check_position_loop)
         except:
-            # If any error, just close
             try:
                 self.destroy()
             except:
                 pass
 
     def _cancel_close(self):
-        # Prevent closing if mouse is over buttons
         pass
 
 
@@ -841,7 +885,84 @@ class PeopleList(ctk.CTkScrollableFrame):
         self._last_hash = None
         self._hover_id = None
         self._popup = None
+        self._thumb_cache = {}  # person_id -> thumbnail path
     
+
+    def _get_person_thumbnail(self, person_id, person_name, enrollment=None):
+        """Get or generate a face thumbnail for a person.
+        
+        Priority:
+        1. Cached thumbnail
+        2. Enrollment selfie (enrolled users)
+        3. Auto-crop from first detected face (non-enrolled)
+        
+        Returns path string or None.
+        """
+        # Check memory cache
+        if person_id in self._thumb_cache:
+            cached = self._thumb_cache[person_id]
+            if cached and Path(cached).exists():
+                return cached
+        
+        try:
+            from app.config import get_config
+            config = get_config()
+            
+            # Check for enrollment selfie first
+            if enrollment:
+                selfie = Path(enrollment.selfie_path)
+                if selfie.exists():
+                    self._thumb_cache[person_id] = str(selfie)
+                    return str(selfie)
+            
+            # Check for reference selfie in person folder
+            person_dir = config.people_dir / person_name
+            ref_selfie = person_dir / "00_REFERENCE_SELFIE.jpg"
+            if ref_selfie.exists():
+                self._thumb_cache[person_id] = str(ref_selfie)
+                return str(ref_selfie)
+            
+            # Auto-generate from face bbox
+            cache_dir = config.people_dir / ".thumbnails"
+            cache_dir.mkdir(exist_ok=True)
+            thumb_path = cache_dir / f"person_{person_id}.jpg"
+            
+            if thumb_path.exists():
+                self._thumb_cache[person_id] = str(thumb_path)
+                return str(thumb_path)
+            
+            # Generate: crop face from source photo
+            db = get_db()
+            face_info = db.get_first_face_for_person(person_id)
+            if not face_info or not face_info["processed_path"]:
+                self._thumb_cache[person_id] = None
+                return None
+            
+            src_path = Path(face_info["processed_path"])
+            if not src_path.exists():
+                self._thumb_cache[person_id] = None
+                return None
+            
+            img = Image.open(src_path)
+            bx, by, bw, bh = face_info["bbox_x"], face_info["bbox_y"], face_info["bbox_w"], face_info["bbox_h"]
+            
+            # Add generous padding around the face crop
+            pad = int(max(bw, bh) * 0.4)
+            x1 = max(0, bx - pad)
+            y1 = max(0, by - pad)
+            x2 = min(img.width, bx + bw + pad)
+            y2 = min(img.height, by + bh + pad)
+            
+            face_crop = img.crop((x1, y1, x2, y2))
+            face_crop = face_crop.resize((120, 120), Image.LANCZOS)
+            face_crop.save(str(thumb_path), "JPEG", quality=85)
+            
+            self._thumb_cache[person_id] = str(thumb_path)
+            return str(thumb_path)
+            
+        except Exception:
+            self._thumb_cache[person_id] = None
+            return None
 
     def _open_person_folder(self, person_name):
         """Open the specific person's folder in file explorer."""
@@ -861,7 +982,6 @@ class PeopleList(ctk.CTkScrollableFrame):
                 from app.cloud import get_cloud
                 cloud = get_cloud()
                 if cloud.is_enabled:
-                    # This might take a second if not cached
                     folder_id = cloud.ensure_folder_path(["People", person_name])
                     if folder_id:
                         url = f"https://drive.google.com/drive/folders/{folder_id}"
@@ -879,15 +999,21 @@ class PeopleList(ctk.CTkScrollableFrame):
                 pass
         self._popup = None
 
-    def _show_choice_popup(self, x, y, person_name):
-        """Show the floating choice menu."""
+    def _show_choice_popup(self, x, y, person_name, person_id=None, enrollment=None):
+        """Show the floating choice menu with optional face thumbnail."""
         if self._popup and self._popup.winfo_exists():
             self._popup.destroy()
+        
+        # Get thumbnail
+        thumb = None
+        if person_id is not None:
+            thumb = self._get_person_thumbnail(person_id, person_name, enrollment)
         
         self._popup = FolderChoicePopup(
             self, x, y, person_name,
             on_local=lambda: self._open_person_folder(person_name),
-            on_cloud=lambda: self._open_cloud_folder(person_name)
+            on_cloud=lambda: self._open_cloud_folder(person_name),
+            thumbnail_path=thumb
         )
 
     def update_persons(self, persons: list, enrollments: dict):
@@ -935,11 +1061,11 @@ class PeopleList(ctk.CTkScrollableFrame):
                 row.configure(cursor="hand2")
                 
                 # Hover effect & Popup trigger
-                def on_enter(e, r=row, pn=p_name): 
+                def on_enter(e, r=row, pn=p_name, pid=person.id, enr=enrollment): 
                     r.configure(fg_color=("#f2f2f2", "#3a3a3c"))
                     # Start timer for popup
                     if self._hover_id: self.after_cancel(self._hover_id)
-                    self._hover_id = self.after(600, lambda: self._show_choice_popup(e.x_root, e.y_root, pn))
+                    self._hover_id = self.after(600, lambda: self._show_choice_popup(e.x_root, e.y_root, pn, pid, enr))
 
                 def on_leave(e, r=row): 
                     r.configure(fg_color=COLORS["bg_card"])
