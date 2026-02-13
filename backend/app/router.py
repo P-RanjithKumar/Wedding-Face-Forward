@@ -50,22 +50,27 @@ def ensure_person_folders(person_id: int, config=None) -> tuple[Path, Path]:
     solo_dir.mkdir(parents=True, exist_ok=True)
     group_dir.mkdir(parents=True, exist_ok=True)
     
-    # REAL-TIME CLOUD SYNC: Create cloud folder structure immediately
+    # CLOUD SYNC: Create cloud folder structure in background thread
+    # This MUST be non-blocking to prevent SSL/network errors from stalling
+    # the photo processing workers. Cloud folder creation involves network
+    # calls with retries that can take 30-60+ seconds on SSL failures.
+    import threading
+    
     cloud = get_cloud()
     if cloud.is_enabled and not config.dry_run:
-        try:
-            # Create People/PersonName/Solo folder structure
-            solo_cloud_path = ["People", person_folder_name, "Solo"]
-            cloud.ensure_folder_path(solo_cloud_path)
-            
-            # Create People/PersonName/Group folder structure
-            group_cloud_path = ["People", person_folder_name, "Group"]
-            cloud.ensure_folder_path(group_cloud_path)
-            
-            logger.debug(f"Cloud folders created for: {person_folder_name}")
-        except Exception as e:
-            # Don't fail the entire operation if cloud sync fails
-            logger.warning(f"Failed to create cloud folders for {person_folder_name}: {e}")
+        def _create_cloud_folders():
+            try:
+                cloud.ensure_folder_path(["People", person_folder_name, "Solo"])
+                cloud.ensure_folder_path(["People", person_folder_name, "Group"])
+                logger.debug(f"Cloud folders created for: {person_folder_name}")
+            except Exception as e:
+                logger.warning(f"Failed to create cloud folders for {person_folder_name}: {e}")
+        
+        threading.Thread(
+            target=_create_cloud_folders,
+            daemon=True,
+            name=f"CloudFolders-{person_folder_name}"
+        ).start()
     
     return solo_dir, group_dir
 

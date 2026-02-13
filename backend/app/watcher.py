@@ -107,6 +107,11 @@ class PhotoEventHandler(FileSystemEventHandler):
             # Create photo record and enqueue
             photo_id = db.create_photo(file_hash, str(file_path))
             self.job_queue.put((photo_id, file_path, file_hash))
+            
+            # Track progress for user feedback
+            from .worker import progress
+            progress.on_enqueue()
+            
             logger.info(f"Enqueued: {file_path.name} (ID: {photo_id})")
             
         except Exception as e:
@@ -191,7 +196,11 @@ class DirectoryScanner(Thread):
                 logger.info(f"Scanner found: {file_path.name} (ID: {photo_id})")
                 
             except Exception as e:
-                logger.error(f"Scanner error for {file_path}: {e}")
+                # UNIQUE constraint = duplicate file, expected on re-scans
+                if "UNIQUE constraint" in str(e):
+                    logger.debug(f"Already in DB (duplicate hash): {file_path.name}")
+                else:
+                    logger.error(f"Scanner error for {file_path}: {e}")
         
         if enqueued > 0:
             logger.info(f"Scanner enqueued {enqueued} files")

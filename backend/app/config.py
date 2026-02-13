@@ -67,7 +67,7 @@ class Config:
         db_path = Path(os.getenv("DB_PATH", "./data/wedding.db")).resolve()
         
         # Parse extensions
-        ext_str = os.getenv("SUPPORTED_EXTENSIONS", ".jpg,.jpeg,.png,.cr2,.nef,.arw,.dng,.orf,.rw2")
+        ext_str = os.getenv("SUPPORTED_EXTENSIONS", ".jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.bmp,.tiff,.tif,.gif,.cr2,.nef,.arw,.dng,.orf,.rw2,.raf,.pef")
         extensions = tuple(ext.strip().lower() for ext in ext_str.split(","))
         
         # Resolve credentials file path

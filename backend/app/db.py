@@ -240,17 +240,130 @@ class Database:
     
     @retry_on_lock()
     def _reset_stuck_processing(self) -> int:
-        """Reset photos stuck in 'processing' status back to 'pending'."""
-        conn = self.connect()
-        # Use explicit transaction block
-        with conn:
-            cursor = conn.execute(
-                "UPDATE photos SET status = 'pending' WHERE status = 'processing'"
-            )
-            count = cursor.rowcount
+        """Reset photos stuck in 'processing' status back to 'pending'.
         
-        if count > 0:
-            logger.warning(f"Reset {count} photo(s) stuck in 'processing' status back to 'pending'")
+        Also cleans up orphaned face records that were committed before
+        the crash, and recalculates affected person centroids to prevent
+        duplicates and inflated face counts on reprocessing.
+        """
+        conn = self.connect()
+        
+        # Step 1: Find photos stuck in processing
+        cursor = conn.execute(
+            "SELECT id FROM photos WHERE status = 'processing'"
+        )
+        stuck_photo_ids = [row[0] for row in cursor.fetchall()]
+        
+        if not stuck_photo_ids:
+            # Also clean up any 'pending' photos that have orphaned face records
+            cursor = conn.execute(
+                "SELECT DISTINCT p.id FROM photos p INNER JOIN faces f ON f.photo_id = p.id WHERE p.status = 'pending'"
+            )
+            orphan_photo_ids = [row[0] for row in cursor.fetchall()]
+            if orphan_photo_ids:
+                logger.warning(f"Found {len(orphan_photo_ids)} pending photo(s) with orphaned face records, cleaning up...")
+                self._cleanup_orphaned_faces(orphan_photo_ids)
+            return 0
+        
+        logger.warning(f"Found {len(stuck_photo_ids)} photo(s) stuck in 'processing' status")
+        
+        # Step 2: Clean up orphaned face records from the crashed processing
+        self._cleanup_orphaned_faces(stuck_photo_ids)
+        
+        # Step 3: Reset photo status to pending
+        with conn:
+            placeholders = ','.join('?' * len(stuck_photo_ids))
+            conn.execute(
+                f"UPDATE photos SET status = 'pending' WHERE id IN ({placeholders})",
+                stuck_photo_ids
+            )
+        
+        logger.warning(f"Reset {len(stuck_photo_ids)} photo(s) stuck in 'processing' status back to 'pending'")
+        return len(stuck_photo_ids)
+    
+    @retry_on_lock()
+    def _cleanup_orphaned_faces(self, photo_ids: list) -> None:
+        """Delete orphaned face records for given photos and recalculate affected person centroids.
+        
+        When processing crashes mid-pipeline, faces get committed but the photo
+        never reaches 'completed'. This method undoes that partial work so the
+        photo can be cleanly reprocessed without duplicates.
+        """
+        conn = self.connect()
+        
+        placeholders = ','.join('?' * len(photo_ids))
+        
+        # Find which persons were affected
+        cursor = conn.execute(
+            f"SELECT DISTINCT person_id FROM faces WHERE photo_id IN ({placeholders}) AND person_id IS NOT NULL",
+            photo_ids
+        )
+        affected_person_ids = [row[0] for row in cursor.fetchall()]
+        
+        # Count faces being removed
+        cursor = conn.execute(
+            f"SELECT COUNT(*) FROM faces WHERE photo_id IN ({placeholders})",
+            photo_ids
+        )
+        face_count = cursor.fetchone()[0]
+        
+        if face_count == 0:
+            return
+        
+        # Delete the orphaned face records
+        with conn:
+            conn.execute(
+                f"DELETE FROM faces WHERE photo_id IN ({placeholders})",
+                photo_ids
+            )
+        
+        logger.warning(f"Deleted {face_count} orphaned face record(s) from photo(s) {photo_ids}")
+        
+        # Recalculate face_count for affected persons
+        for person_id in affected_person_ids:
+            cursor = conn.execute(
+                "SELECT COUNT(*) FROM faces WHERE person_id = ?",
+                (person_id,)
+            )
+            actual_count = cursor.fetchone()[0]
+            
+            if actual_count == 0:
+                # Person has no faces left — delete it
+                with conn:
+                    conn.execute("DELETE FROM persons WHERE id = ?", (person_id,))
+                logger.warning(f"Removed empty person cluster ID {person_id} (had no remaining faces)")
+            else:
+                # Recalculate centroid from remaining faces
+                cursor = conn.execute(
+                    "SELECT embedding FROM faces WHERE person_id = ?",
+                    (person_id,)
+                )
+                embeddings = [pickle.loads(row[0]) for row in cursor.fetchall()]
+                
+                if embeddings:
+                    new_centroid = np.mean(embeddings, axis=0)
+                    norm = np.linalg.norm(new_centroid)
+                    if norm > 0:
+                        new_centroid = new_centroid / norm
+                    
+                    centroid_blob = pickle.dumps(new_centroid)
+                    with conn:
+                        conn.execute(
+                            "UPDATE persons SET centroid = ?, face_count = ? WHERE id = ?",
+                            (centroid_blob, actual_count, person_id)
+                        )
+                    logger.info(f"Recalculated centroid for person {person_id} (face_count: {actual_count})")
+    
+    @retry_on_lock()
+    def get_faces_count_for_photo(self, photo_id: int) -> int:
+        """Check how many face records exist for a photo."""
+        conn = self.connect()
+        cursor = conn.execute(
+            "SELECT COUNT(*) FROM faces WHERE photo_id = ?",
+            (photo_id,)
+        )
+        count = cursor.fetchone()[0]
+        conn.commit()
         return count
     
     # =========================================================================

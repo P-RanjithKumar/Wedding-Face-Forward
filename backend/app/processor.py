@@ -6,6 +6,7 @@ face detection, and embedding extraction using InsightFace.
 """
 
 import logging
+import threading
 from pathlib import Path
 from typing import List, Tuple, Optional
 from dataclasses import dataclass
@@ -18,8 +19,8 @@ from .config import get_config
 
 logger = logging.getLogger(__name__)
 
-# InsightFace imports (lazy loaded)
-_face_analyzer = None
+# Thread-local storage for InsightFace analyzer (one per worker thread)
+_thread_local = threading.local()
 
 
 @dataclass
@@ -31,23 +32,25 @@ class DetectedFace:
 
 
 def _get_face_analyzer():
-    """Lazy load the InsightFace face analyzer."""
-    global _face_analyzer
-    if _face_analyzer is None:
+    """Get thread-local InsightFace face analyzer (one instance per worker thread)."""
+    analyzer = getattr(_thread_local, 'face_analyzer', None)
+    if analyzer is None:
         try:
             from insightface.app import FaceAnalysis
             
-            logger.info("Loading InsightFace model (buffalo_l)...")
-            _face_analyzer = FaceAnalysis(
+            thread_name = threading.current_thread().name
+            logger.info(f"Loading InsightFace model (buffalo_l) for thread {thread_name}...")
+            analyzer = FaceAnalysis(
                 name="buffalo_l",
                 providers=["CPUExecutionProvider"]
             )
-            _face_analyzer.prepare(ctx_id=-1, det_size=(640, 640))
-            logger.info("InsightFace model loaded successfully")
+            analyzer.prepare(ctx_id=-1, det_size=(640, 640))
+            _thread_local.face_analyzer = analyzer
+            logger.info(f"InsightFace model loaded successfully for thread {thread_name}")
         except ImportError as e:
             logger.error(f"InsightFace not installed: {e}")
             raise RuntimeError("Please install insightface: pip install insightface onnxruntime")
-    return _face_analyzer
+    return analyzer
 
 
 def is_raw_file(file_path: Path) -> bool:
@@ -129,6 +132,43 @@ def fix_orientation(image: Image.Image) -> Image.Image:
         return image
 
 
+# Track if modern formats have been enabled (per thread)
+_modern_formats_enabled = threading.local()
+
+
+def _enable_modern_formats():
+    """
+    Enable support for modern image formats (AVIF, HEIC/HEIF, WebP).
+    WebP is usually supported natively by PIL if compiled correctly.
+    AVIF and HEIC require additional plugins.
+    """
+    if getattr(_modern_formats_enabled, 'done', False):
+        return  # Already enabled for this thread
+    
+    # Try to enable HEIC/HEIF support
+    try:
+        from pillow_heif import register_heif_opener
+        register_heif_opener()
+        logger.debug("HEIC/HEIF support enabled via pillow-heif")
+    except ImportError:
+        logger.debug("HEIC/HEIF support not available (install: pip install pillow-heif)")
+    except Exception as e:
+        logger.debug(f"Could not enable HEIC/HEIF support: {e}")
+    
+    # Try to enable AVIF support
+    try:
+        from pillow_avif import AvifImagePlugin
+        logger.debug("AVIF support enabled via pillow-avif-plugin")
+    except ImportError:
+        logger.debug("AVIF support not available (install: pip install pillow-avif-plugin)")
+    except Exception as e:
+        logger.debug(f"Could not enable AVIF support: {e}")
+    
+    # WebP is usually built into PIL, no action needed
+    # Mark as done for this thread
+    _modern_formats_enabled.done = True
+
+
 def normalize_image(
     input_path: Path,
     output_path: Path,
@@ -136,6 +176,7 @@ def normalize_image(
 ) -> bool:
     """
     Normalize an image: resize to max dimension, fix orientation, save as JPEG.
+    Supports: JPEG, PNG, BMP, TIFF, WebP, AVIF, HEIC/HEIF, and all camera RAW formats.
     Returns True on success.
     """
     try:
@@ -146,12 +187,16 @@ def normalize_image(
             # Re-open the converted file for further processing
             img = Image.open(output_path)
         else:
+            # Enable modern format support
+            _enable_modern_formats()
+            
+            # Open image (PIL will handle AVIF/WebP/HEIC if plugins are installed)
             img = Image.open(input_path)
         
         # Fix orientation
         img = fix_orientation(img)
         
-        # Convert to RGB if necessary
+        # Convert to RGB if necessary (AVIF/WebP might be RGBA)
         if img.mode != "RGB":
             img = img.convert("RGB")
         
@@ -204,9 +249,14 @@ def create_thumbnail(
         return False
 
 
+# Minimum dimension for reliable face detection (InsightFace det_size is 640x640)
+_MIN_DETECT_DIM = 640
+
+
 def detect_faces(image_path: Path) -> List[DetectedFace]:
     """
     Detect faces in an image and extract embeddings using InsightFace.
+    Upscales small images to ensure the face detector can find faces.
     Returns list of DetectedFace objects.
     """
     try:
@@ -218,14 +268,35 @@ def detect_faces(image_path: Path) -> List[DetectedFace]:
             logger.error(f"Could not read image: {image_path}")
             return []
         
+        h, w = img.shape[:2]
+        scale_factor = 1.0
+        
+        # Upscale small images so InsightFace can detect faces reliably
+        # The detection model expects 640x640; tiny images (e.g. 200x250) 
+        # will often produce zero detections or silent errors.
+        if max(h, w) < _MIN_DETECT_DIM:
+            scale_factor = _MIN_DETECT_DIM / max(h, w)
+            new_w = int(w * scale_factor)
+            new_h = int(h * scale_factor)
+            img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+            logger.debug(f"Upscaled {image_path.name} from {w}x{h} to {new_w}x{new_h} for face detection")
+        
         # Detect faces
         faces = analyzer.get(img)
         
         detected = []
         for face in faces:
             # Get bounding box (InsightFace returns [x1, y1, x2, y2])
-            bbox = face.bbox.astype(int)
+            bbox = face.bbox.astype(float)
             x1, y1, x2, y2 = bbox
+            
+            # Scale bounding box back to original image coordinates
+            if scale_factor != 1.0:
+                x1 /= scale_factor
+                y1 /= scale_factor
+                x2 /= scale_factor
+                y2 /= scale_factor
+            
             width = x2 - x1
             height = y2 - y1
             
@@ -246,6 +317,8 @@ def detect_faces(image_path: Path) -> List[DetectedFace]:
         
     except Exception as e:
         logger.error(f"Face detection failed for {image_path}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return []
 
 

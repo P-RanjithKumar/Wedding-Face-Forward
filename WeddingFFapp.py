@@ -209,10 +209,10 @@ class StatusSection(ctk.CTkFrame):
 
 
 # =============================================================================
-# Processing Widget (Animated)
+# Processing Widget (Circular Progress Bar)
 # =============================================================================
 class ProcessingWidget(ctk.CTkFrame):
-    """Animated processing status with visual feedback."""
+    """Animated circular progress bar with percentage and status."""
     
     def __init__(self, parent):
         super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=1, border_color=COLORS["border"])
@@ -221,79 +221,170 @@ class ProcessingWidget(ctk.CTkFrame):
             self, text="Processing", font=("SF Pro Display", 15, "bold"),
             text_color=COLORS["text_primary"], anchor="w"
         )
-        self.title_label.pack(fill="x", padx=20, pady=(15, 10))
+        self.title_label.pack(fill="x", padx=20, pady=(15, 5))
         
-        # Canvas for animation
+        # Canvas for circular progress
         self.canvas_size = 140
         self.canvas = ctk.CTkCanvas(
             self, width=self.canvas_size, height=self.canvas_size,
             bg=COLORS["bg_card"][0], highlightthickness=0
         )
-        self.canvas.pack(pady=10)
+        self.canvas.pack(pady=5)
+        
+        # Progress text (below ring)
+        self.progress_label = ctk.CTkLabel(
+            self, text="0 / 0 Photos", font=("SF Pro Display", 12),
+            text_color=COLORS["text_secondary"]
+        )
+        self.progress_label.pack(pady=(0, 3))
         
         self.status_label = ctk.CTkLabel(
             self, text="Idle", font=("SF Pro Display", 13),
             text_color=COLORS["text_secondary"]
         )
-        self.status_label.pack(pady=(0, 15))
+        self.status_label.pack(pady=(0, 12))
         
         self._animating = False
         self._angle = 0
-        self._mode = "light"  # Track mode for canvas bg
+        self._mode = "light"
         
-        self.draw_static_ring()
+        # Progress state
+        self._target_progress = 0.0    # 0.0 to 1.0
+        self._current_progress = 0.0   # Smoothly animates toward target
+        self._completed = 0
+        self._total = 0
+        
+        self._draw_ring()
 
     def set_appearance_mode(self, mode):
         self._mode = mode.lower()
         bg = COLORS["bg_card"][1] if self._mode == "dark" else COLORS["bg_card"][0]
         self.canvas.configure(bg=bg)
-        self.draw_static_ring()
+        self._draw_ring()
 
-    def draw_static_ring(self):
+    def _draw_ring(self):
+        """Draw the circular progress ring with current state."""
         self.canvas.delete("all")
         cx, cy = self.canvas_size / 2, self.canvas_size / 2
-        r = 50
-        # Draw base ring
-        color = "#3a3a3c" if self._mode == "dark" else "#e5e5e5"
-        self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r, outline=color, width=4)
+        r = 52
+        line_w = 6
+        
+        # Background ring (track)
+        track_color = "#3a3a3c" if self._mode == "dark" else "#e0e0e0"
+        self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r, outline=track_color, width=line_w)
+        
+        # Progress arc
+        progress = self._current_progress
+        if progress > 0:
+            extent = progress * 360
+            
+            # Color: blue while processing, green when done
+            if progress >= 1.0:
+                arc_color = COLORS["success"][1] if self._mode == "dark" else COLORS["success"][0]
+            else:
+                arc_color = COLORS["accent"][1] if self._mode == "dark" else COLORS["accent"][0]
+            
+            self.canvas.create_arc(
+                cx-r, cy-r, cx+r, cy+r,
+                start=90, extent=-extent,
+                outline=arc_color, width=line_w, style="arc"
+            )
+            
+            # Glow dot at the leading edge
+            if 0 < progress < 1.0:
+                angle_rad = math.radians(90 - extent)
+                dot_x = cx + r * math.cos(angle_rad)
+                dot_y = cy - r * math.sin(angle_rad)
+                dot_r = 4
+                self.canvas.create_oval(
+                    dot_x-dot_r, dot_y-dot_r, dot_x+dot_r, dot_y+dot_r,
+                    fill=arc_color, outline=""
+                )
+        
+        # Center text
+        pct_color = COLORS["text_primary"][1] if self._mode == "dark" else COLORS["text_primary"][0]
+        
+        if self._total == 0 and not self._animating:
+            # Idle state
+            self.canvas.create_text(
+                cx, cy - 4, text="--",
+                fill=track_color, font=("SF Pro Display", 28, "bold")
+            )
+            self.canvas.create_text(
+                cx, cy + 18, text="IDLE",
+                fill=track_color, font=("SF Pro Display", 10)
+            )
+        elif progress >= 1.0:
+            # Complete
+            done_color = COLORS["success"][1] if self._mode == "dark" else COLORS["success"][0]
+            self.canvas.create_text(
+                cx, cy - 2, text="DONE",
+                fill=done_color, font=("SF Pro Display", 22, "bold")
+            )
+        else:
+            # In progress - show percentage
+            pct = int(progress * 100)
+            self.canvas.create_text(
+                cx, cy - 8, text=f"{pct}",
+                fill=pct_color, font=("SF Pro Display", 32, "bold")
+            )
+            self.canvas.create_text(
+                cx, cy + 18, text="%",
+                fill=COLORS["text_secondary"][1] if self._mode == "dark" else COLORS["text_secondary"][0],
+                font=("SF Pro Display", 12)
+            )
+
+    def update_progress(self, completed: int, total: int):
+        """Update progress bar with current counts."""
+        self._completed = completed
+        self._total = total
+        
+        if total > 0:
+            self._target_progress = min(completed / total, 1.0)
+        else:
+            self._target_progress = 0.0
+        
+        # Update text labels
+        if total == 0:
+            self.progress_label.configure(text="No photos queued")
+            self.status_label.configure(text="Idle", text_color=COLORS["text_secondary"])
+        elif completed >= total:
+            self.progress_label.configure(text=f"{completed} / {total} Photos")
+            self.status_label.configure(text="All Done!", text_color=COLORS["success"])
+        else:
+            self.progress_label.configure(text=f"{completed} / {total} Photos")
+            self.status_label.configure(text="Processing...", text_color=COLORS["accent"])
 
     def start_processing(self):
         if not self._animating:
             self._animating = True
-            self.status_label.configure(text="Processing...", text_color=COLORS["accent"])
             self._animate()
 
     def stop_processing(self):
         self._animating = False
-        self.status_label.configure(text="Idle", text_color=COLORS["text_secondary"])
-        self.draw_static_ring()
+        if self._total == 0:
+            self.status_label.configure(text="Idle", text_color=COLORS["text_secondary"])
+            self._current_progress = 0
+            self._target_progress = 0
+            self._draw_ring()
+
+    def draw_static_ring(self):
+        """Legacy compatibility - just draw current state."""
+        self._draw_ring()
 
     def _animate(self):
         if not self._animating:
             return
-            
-        self.canvas.delete("all")
-        cx, cy = self.canvas_size / 2, self.canvas_size / 2
-        r = 50
         
-        # Draw base ring
-        bg_color = "#3a3a3c" if self._mode == "dark" else "#e5e5e5"
-        self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r, outline=bg_color, width=4)
+        # Smooth interpolation toward target progress
+        diff = self._target_progress - self._current_progress
+        if abs(diff) > 0.002:
+            self._current_progress += diff * 0.12  # Ease-out
+        else:
+            self._current_progress = self._target_progress
         
-        # Draw rotating arc
-        start = self._angle
-        extent = 90
-        arc_color = COLORS["accent"][1] if self._mode == "dark" else COLORS["accent"][0]
-        self.canvas.create_arc(cx-r, cy-r, cx+r, cy+r, start=start, extent=extent, outline=arc_color, width=4, style="arc")
-        
-        # Pulse effect (inner circle)
-        pulse_r = r * (0.5 + 0.1 * math.sin(math.radians(self._angle * 2)))
-        fill_color = COLORS["accent"][1] if self._mode == "dark" else COLORS["accent"][0]
-        # Use stipple for transparency simulation if needed, or just solid small circle
-        self.canvas.create_oval(cx-pulse_r, cy-pulse_r, cx+pulse_r, cy+pulse_r, fill=fill_color, outline="")
-
-        self._angle = (self._angle + 10) % 360
-        self.after(50, self._animate)
+        self._draw_ring()
+        self.after(33, self._animate)  # ~30fps
 
 
 # =============================================================================
@@ -573,12 +664,25 @@ class PeopleList(ctk.CTkScrollableFrame):
             flash_color = COLORS["accent"]
             
             def flash(step):
+                # Guard: widget may have been destroyed by a refresh cycle
+                try:
+                    if not found_widget.winfo_exists():
+                        return
+                except Exception:
+                    return
+                
                 if step > 5:
-                    found_widget.configure(fg_color="transparent") # Reset
+                    try:
+                        found_widget.configure(fg_color="transparent") # Reset
+                    except Exception:
+                        pass
                     return
                 # Toggle
                 c = flash_color if step % 2 == 0 else "transparent"
-                found_widget.configure(fg_color=c)
+                try:
+                    found_widget.configure(fg_color=c)
+                except Exception:
+                    return  # Widget was destroyed, stop flashing
                 self.after(200, lambda: flash(step + 1))
             
             flash(0)
@@ -984,7 +1088,7 @@ class WeddingFFApp(ctk.CTk):
     
     def _refresh_loop(self):
         while self.running:
-            time.sleep(5)
+            time.sleep(1) # Faster updates for a smoother, modern feel
             if self.running:
                 self.after(0, self._refresh_stats)
     
@@ -1008,15 +1112,21 @@ class WeddingFFApp(ctk.CTk):
             if self.config.incoming_dir.exists():
                 incoming = len([f for f in self.config.incoming_dir.iterdir() if f.is_file() and f.suffix.lower() in self.config.supported_extensions])
             
-            self.proc_widget.status_label.configure(text=f"Queue: {incoming}")
+            # Compute session progress for the circular progress bar
+            pending = photos_by_status.get("pending", 0)
+            session_total = completed + errors + processing + pending
+            session_done = completed + errors
+            
+            # Update the progress ring
+            self.proc_widget.update_progress(session_done, session_total)
 
             if processing > 0:
                 self.proc_widget.start_processing()
-                self.proc_widget.status_label.configure(text=f"Processing {processing}...")
-            else:
-                self.proc_widget.stop_processing()
-                if incoming > 0:
-                    self.proc_widget.status_label.configure(text="Waiting...", text_color=COLORS["warning"])
+            elif session_done >= session_total and session_total > 0:
+                self.proc_widget.stop_processing()  # Keep the "DONE" state
+            elif incoming > 0:
+                self.proc_widget.start_processing()
+                self.proc_widget.status_label.configure(text="Waiting...", text_color=COLORS["warning"])
             # self.queue_section.update_row("completed", str(completed))
             # self.queue_section.update_row("errors", str(errors))
             

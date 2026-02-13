@@ -51,9 +51,14 @@ def save_state(state):
     with open(STATE_FILE, 'w', encoding='utf-8') as f:
         json.dump(state, f, indent=4)
 
-def fetch_enrolled_users(db_path):
+# Track last known user count to reduce log noise
+_last_user_count = None
+
+def fetch_enrolled_users(db_path, verbose=True):
     """Fetches enrolled users with phone numbers from the database."""
-    print(f"Connecting to database at: {db_path}")
+    global _last_user_count
+    if verbose:
+        print(f"Connecting to database at: {db_path}")
     if not db_path.exists():
         print("Error: Database file not found.")
         return []
@@ -75,6 +80,11 @@ def fetch_enrolled_users(db_path):
         """)
         users = [dict(row) for row in cursor.fetchall()]
         conn.close()
+        # Only log when user count changes to reduce noise
+        if verbose or _last_user_count != len(users):
+            if _last_user_count is not None and _last_user_count != len(users):
+                print(f"Enrollment count changed: {_last_user_count} -> {len(users)}")
+        _last_user_count = len(users)
         return users
     except Exception as e:
         print(f"Database error: {e}")
@@ -361,10 +371,14 @@ async def main():
         # Continuous Loop
         print("Starting continuous monitoring for new enrollments...")
         
+        poll_count = 0
         while True:
             try:
+                poll_count += 1
+                
                 # Reload users to pick up new enrollments
-                users = fetch_enrolled_users(config.db_path)
+                # Only log DB connection on first poll (verbose=False after that)
+                users = fetch_enrolled_users(config.db_path, verbose=(poll_count == 1))
                 state = load_state() # Reload state to avoid race conditions/staleness
                 
                 # 4. Process Users
@@ -421,11 +435,10 @@ async def main():
                     await asyncio.sleep(5) 
 
                 if new_messages_sent == 0:
-                    # No new messages, wait a bit before next DB check
-                    # print(".", end="", flush=True)
+                    # No new messages — nothing to log, just wait quietly
                     pass
                 
-                # Wait before next database poll
+                # Wait before next database poll (ALWAYS reached)
                 await asyncio.sleep(10)
 
             except KeyboardInterrupt:

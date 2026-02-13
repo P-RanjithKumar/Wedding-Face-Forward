@@ -48,6 +48,15 @@ def retry_with_backoff(max_retries: int = 3, initial_delay: int = 2):
                             logger.error(f"Non-retryable error: {error_msg}")
                             raise
                     
+                    # On SSL errors, try to rebuild the Drive service
+                    # The httplib2 connection pool may be corrupted
+                    if isinstance(e, (ssl.SSLError, OSError)) and 'ssl' in error_msg.lower():
+                        self_obj = args[0] if args and isinstance(args[0], CloudManager) else None
+                        if self_obj:
+                            self_obj._ssl_error_count += 1
+                            if self_obj._ssl_error_count >= 3:
+                                self_obj._rebuild_service()
+                    
                     if attempt < max_retries - 1:
                         logger.warning(f"Attempt {attempt + 1} failed: {error_msg}. Retrying in {delay}s...")
                         time.sleep(delay)
@@ -70,6 +79,8 @@ class CloudManager:
         self.root_folder_id = self.config.drive_root_folder_id
         self._folder_cache: Dict[str, str] = {}  # Cache path -> folder_id
         self._folder_lock = threading.Lock()  # Thread-safe folder creation
+        self._ssl_error_count = 0  # Track SSL errors for service rebuild
+        self._rebuild_lock = threading.Lock()  # Prevent concurrent rebuilds
         
         self.initialize()
 
@@ -138,6 +149,28 @@ class CloudManager:
     def is_enabled(self) -> bool:
         """Check if cloud upload is configured and working."""
         return self.service is not None
+
+    def _rebuild_service(self):
+        """Rebuild the Google Drive service when SSL errors indicate a corrupted connection pool."""
+        if not self._rebuild_lock.acquire(blocking=False):
+            return  # Another thread is already rebuilding
+        try:
+            logger.warning(f"Rebuilding Google Drive service after {self._ssl_error_count} SSL errors...")
+            self._ssl_error_count = 0
+            
+            # Rebuild HTTP client and service
+            timeout = max(self.config.upload_timeout_connect, self.config.upload_timeout_read)
+            http = httplib2.Http(
+                timeout=timeout,
+                disable_ssl_certificate_validation=False
+            )
+            authed_http = google_auth_httplib2.AuthorizedHttp(self.creds, http=http)
+            self.service = build('drive', 'v3', http=authed_http)
+            logger.info("Google Drive service rebuilt successfully")
+        except Exception as e:
+            logger.error(f"Failed to rebuild Google Drive service: {e}")
+        finally:
+            self._rebuild_lock.release()
 
     @retry_with_backoff(max_retries=3, initial_delay=2)
     def _find_folder(self, name: str, parent_id: Optional[str] = None) -> Optional[str]:

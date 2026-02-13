@@ -12,7 +12,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from queue import Queue, Empty
-from threading import Event
+from threading import Event, Lock
 from typing import Optional
 
 from .config import get_config
@@ -28,6 +28,60 @@ logger = logging.getLogger(__name__)
 
 # Global shutdown flag
 shutdown_event = Event()
+
+
+class ProgressTracker:
+    """Thread-safe progress tracker for photo processing batches."""
+    
+    def __init__(self):
+        self._lock = Lock()
+        self._total_enqueued = 0
+        self._completed = 0
+        self._active = 0  # currently being processed
+        self._last_idle_reported = False
+    
+    def on_enqueue(self, count: int = 1):
+        """Called when new photos are added to the queue."""
+        with self._lock:
+            self._total_enqueued += count
+            self._last_idle_reported = False
+    
+    def on_start(self) -> str:
+        """Called when a worker starts processing a photo. Returns progress string."""
+        with self._lock:
+            self._active += 1
+            current = self._completed + 1
+            return f"[{current}/{self._total_enqueued}]"
+    
+    def on_complete(self) -> str:
+        """Called when a photo finishes processing. Returns progress string."""
+        with self._lock:
+            self._completed += 1
+            self._active -= 1
+            return f"[{self._completed}/{self._total_enqueued}]"
+    
+    def get_status(self) -> dict:
+        """Get current processing status."""
+        with self._lock:
+            return {
+                "total": self._total_enqueued,
+                "completed": self._completed,
+                "active": self._active,
+                "remaining": self._total_enqueued - self._completed,
+                "all_done": self._completed >= self._total_enqueued and self._total_enqueued > 0,
+            }
+    
+    def check_and_report_idle(self) -> bool:
+        """Returns True if just went idle (transitions from busy to all done). Only reports once."""
+        with self._lock:
+            if self._completed >= self._total_enqueued and self._total_enqueued > 0 and not self._last_idle_reported:
+                self._last_idle_reported = True
+                return True
+            return False
+
+
+# Global progress tracker
+progress = ProgressTracker()
 
 
 def setup_logging(level: str = "INFO") -> None:
@@ -69,7 +123,16 @@ def process_single_photo(
     start_time = time.time()
     
     try:
-        logger.info(f"Processing: {file_path.name} (ID: {photo_id})")
+        prog = progress.on_start()
+        logger.info(f"Processing {prog}: {file_path.name} (ID: {photo_id})")
+        
+        # Safety check: clean up any orphaned face records from a previous crash
+        existing_faces = db.get_faces_count_for_photo(photo_id)
+        if existing_faces > 0:
+            logger.warning(
+                f"Photo {photo_id} has {existing_faces} orphaned face records from a previous crash, cleaning up..."
+            )
+            db._cleanup_orphaned_faces([photo_id])
         
         # Update status to processing
         db.update_photo_status(photo_id, "processing")
@@ -81,6 +144,7 @@ def process_single_photo(
             logger.error(f"Processing failed: {result.error}")
             db.update_photo_status(photo_id, "error")
             route_to_errors(file_path, config)
+            progress.on_complete()  # Count errors toward progress
             return False
         
         # Step 4: Cluster faces and assign to persons
@@ -148,8 +212,9 @@ def process_single_photo(
         elapsed = time.time() - start_time
         unique_persons = len(set(person_ids))
         cloud = get_cloud()
+        prog = progress.on_complete()
         logger.info(
-            f"Completed: {file_path.name} | "
+            f"Completed {prog}: {file_path.name} | "
             f"{len(result.faces)} faces, {unique_persons} persons | "
             f"Cloud: {'Enabled' if cloud.is_enabled else 'Disabled'} | "
             f"{elapsed:.2f}s"
@@ -158,6 +223,7 @@ def process_single_photo(
         
     except Exception as e:
         logger.exception(f"Error processing {file_path.name}: {e}")
+        progress.on_complete()  # Count errors toward progress
         # Ensure photo status is updated to error, even if DB operation fails
         try:
             db.update_photo_status(photo_id, "error")
@@ -278,6 +344,24 @@ def main():
     watcher = Watcher(job_queue, config)
     watcher.start()
     
+    # Resume pending photos from previous session
+    # After a restart the in-memory queue is empty, but the DB may still
+    # contain photos in 'pending' status that were never processed.
+    pending_photos = db.get_pending_photos()
+    if pending_photos:
+        logger.info(f"Resuming {len(pending_photos)} pending photo(s) from previous session")
+        for photo in pending_photos:
+            file_path = Path(photo.original_path)
+            if file_path.exists():
+                job_queue.put((photo.id, file_path, photo.file_hash))
+                progress.on_enqueue()
+            else:
+                logger.warning(
+                    f"Skipping resume for photo {photo.id}: "
+                    f"original file no longer exists at {photo.original_path}"
+                )
+        logger.info(f"Re-queued {job_queue.qsize()} photo(s) for processing")
+    
     # Start upload queue
     upload_queue = get_upload_queue()
     upload_queue.start()
@@ -297,11 +381,23 @@ def main():
                 time.sleep(5)
                 main_loop_count += 1
                 
-                # Print stats periodically
+                # Report meaningful progress status
                 if not shutdown_event.is_set():
+                    status = progress.get_status()
                     queue_size = job_queue.qsize()
-                    if queue_size > 0:
-                        logger.info(f"Queue size: {queue_size}")
+                    
+                    if status["active"] > 0 or queue_size > 0:
+                        # Actively processing
+                        logger.info(
+                            f"Progress: {status['completed']}/{status['total']} done | "
+                            f"{status['active']} processing | {queue_size} queued"
+                        )
+                    elif progress.check_and_report_idle():
+                        # Just finished a batch — show clear "done" message
+                        logger.info(
+                            f">> All {status['total']} photos processed! "
+                            f"Waiting for new photos..."
+                        )
                 
                 # Periodically check for stuck processing photos (~every 2 minutes)
                 if main_loop_count % 24 == 0:
