@@ -1748,6 +1748,7 @@ section {
         color: black;
     }
 }
+
 /* Phone Input Group */
 .input-group-row {
     display: flex;
@@ -1759,3 +1760,81 @@ section {
     flex-shrink: 0;
 }
 
+/* ============================================================
+   CAMERA CAPTURE STYLES
+   ============================================================ */
+.camera-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xl);
+    width: 100%;
+}
+
+.camera-view-window {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    aspect-ratio: 3/4;
+    background: #000;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    border: 4px solid var(--primary-light);
+    transition: all var(--transition-slow);
+}
+
+.camera-view-window:hover {
+    box-shadow: var(--shadow-glow);
+    transform: scale(1.01);
+}
+
+.camera-stream-wrapper,
+.preview-content {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#cameraStream,
+#selfiePreview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#cameraStream {
+    transform: scaleX(-1);
+    /* Mirror effect */
+}
+
+.camera-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.camera-frame {
+    width: 70%;
+    height: 60%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px dashed rgba(255, 255, 255, 1);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.4);
+}
+
+.camera-actions,
+.retake-actions {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.camera-view-window.captured {
+    border-color: #10B981;
+}

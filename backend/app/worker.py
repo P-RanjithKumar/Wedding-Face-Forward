@@ -12,6 +12,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from queue import Queue, Empty
+import threading
 from threading import Event, Lock
 from typing import Optional
 
@@ -23,6 +24,7 @@ from .cluster import assign_person
 from .router import route_photo, route_to_errors, route_to_no_faces, get_routing_summary
 from .cloud import get_cloud
 from .upload_queue import get_upload_queue
+from .phase import get_coordinator, Phase
 
 logger = logging.getLogger(__name__)
 
@@ -246,12 +248,25 @@ def worker_loop(
     """
     Main processing loop for a single worker.
     Pulls jobs from the queue and processes them.
+    
+    Respects the Phase Coordinator: pauses during UPLOADING phase,
+    only processes during PROCESSING phase.
     """
     config = config or get_config()
+    coordinator = get_coordinator()
+    thread_name = threading.current_thread().name
+    
+    logger.info(f"[{thread_name}] Worker started (phase-coordinated, batch_size={coordinator.batch_size})")
     
     while not shutdown_event.is_set():
         try:
-            # Wait for a job with timeout
+            # Wait for PROCESSING phase — blocks if we're in UPLOADING phase.
+            # Returns False on timeout (1s), at which point we loop back
+            # to check shutdown_event.
+            if not coordinator.can_process(timeout=1.0):
+                continue  # Still in UPLOADING phase, check shutdown and retry
+            
+            # Try to get a job from the queue
             job = job_queue.get(timeout=1.0)
             
             if job is None:
@@ -259,14 +274,27 @@ def worker_loop(
                 break
             
             photo_id, file_path, file_hash = job
-            process_single_photo(photo_id, file_path, file_hash, config)
+            
+            try:
+                process_single_photo(photo_id, file_path, file_hash, config)
+            except Exception as e:
+                logger.error(f"[{thread_name}] Error processing photo {photo_id}: {e}")
+            
+            # Notify phase coordinator that a photo was processed (success OR failure).
+            # This MUST happen regardless of success/failure so the batch counter
+            # advances and the upload phase eventually triggers.
+            coordinator.on_photo_processed()
+            batch_status = coordinator.get_status()
+            logger.debug(
+                f"[{thread_name}] Batch progress: {batch_status['photos_in_batch']}/{batch_status['batch_size']}"
+            )
+            
             job_queue.task_done()
             
         except Empty:
             continue
         except Exception as e:
-            logger.error(f"Worker error: {e}")
-            # Still mark job as done on error to prevent queue blocking
+            logger.error(f"[{thread_name}] Worker error: {e}")
             try:
                 job_queue.task_done()
             except:
@@ -388,9 +416,13 @@ def main():
                     
                     if status["active"] > 0 or queue_size > 0:
                         # Actively processing
+                        coord_status = get_coordinator().get_status()
+                        phase_str = coord_status['phase'].upper()
+                        batch_str = f"{coord_status['photos_in_batch']}/{coord_status['batch_size']}"
                         logger.info(
                             f"Progress: {status['completed']}/{status['total']} done | "
-                            f"{status['active']} processing | {queue_size} queued"
+                            f"{status['active']} processing | {queue_size} queued | "
+                            f"Phase: {phase_str} ({batch_str} in batch)"
                         )
                     elif progress.check_and_report_idle():
                         # Just finished a batch — show clear "done" message
@@ -398,6 +430,15 @@ def main():
                             f">> All {status['total']} photos processed! "
                             f"Waiting for new photos..."
                         )
+                    
+                    # If the queue is idle and workers aren't busy,
+                    # flush any partial batch to trigger uploads.
+                    # This handles the case where fewer than batch_size
+                    # photos exist (e.g., only 5 photos with batch_size=20).
+                    if status["active"] == 0 and queue_size == 0:
+                        coordinator = get_coordinator()
+                        if coordinator.photos_in_current_batch > 0:
+                            coordinator.flush_if_needed()
                 
                 # Periodically check for stuck processing photos (~every 2 minutes)
                 if main_loop_count % 24 == 0:

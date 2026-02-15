@@ -53,10 +53,19 @@ const State = {
     currentGalleryTab: 'solo',
     galleryPhotos: { solo: [], group: [] },
     currentPhotoIndex: 0,
+    videoStream: null,
 
     reset() {
         this.currentStep = 1;
         this.selfieFile = null;
+        this.stopVideoStream();
+    },
+
+    stopVideoStream() {
+        if (this.videoStream) {
+            this.videoStream.getTracks().forEach(track => track.stop());
+            this.videoStream = null;
+        }
     }
 };
 
@@ -75,13 +84,17 @@ const Elements = {
 
     // Form elements
     enrollForm: document.getElementById('enrollForm'),
-    selfieInput: document.getElementById('selfieInput'),
-    uploadArea: document.getElementById('uploadArea'),
-    uploadContent: document.getElementById('uploadContent'),
+    cameraArea: document.getElementById('cameraArea'),
+    cameraView: document.getElementById('cameraView'),
+    videoWrapper: document.getElementById('videoWrapper'),
+    cameraStream: document.getElementById('cameraStream'),
+    captureCanvas: document.getElementById('captureCanvas'),
+    captureBtn: document.getElementById('captureBtn'),
+    retakeBtn: document.getElementById('retakeBtn'),
     previewContent: document.getElementById('previewContent'),
     selfiePreview: document.getElementById('selfiePreview'),
-    uploadBtn: document.getElementById('uploadBtn'),
-    changePhotoBtn: document.getElementById('changePhotoBtn'),
+    cameraActions: document.getElementById('cameraActions'),
+    retakeActions: document.getElementById('retakeActions'),
 
     // Form steps
     step1: document.getElementById('step-1'),
@@ -159,28 +172,12 @@ function setupEventListeners() {
     // Navbar scroll effect
     window.addEventListener('scroll', handleScroll);
 
-    // Upload area
-    if (Elements.uploadBtn) Elements.uploadBtn.addEventListener('click', () => Elements.selfieInput.click());
-    if (Elements.uploadArea) {
-        Elements.uploadArea.addEventListener('click', (e) => {
-            if (e.target !== Elements.uploadBtn && !Elements.changePhotoBtn.contains(e.target)) {
-                Elements.selfieInput.click();
-            }
-        });
-        Elements.uploadArea.addEventListener('dragover', handleDragOver);
-        Elements.uploadArea.addEventListener('dragleave', handleDragLeave);
-        Elements.uploadArea.addEventListener('drop', handleDrop);
-    }
+    // Camera actions
+    if (Elements.captureBtn) Elements.captureBtn.addEventListener('click', capturePhoto);
+    if (Elements.retakeBtn) Elements.retakeBtn.addEventListener('click', retakePhoto);
 
-    if (Elements.changePhotoBtn) {
-        Elements.changePhotoBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            Elements.selfieInput.click();
-        });
-    }
-
-    // File input change
-    if (Elements.selfieInput) Elements.selfieInput.addEventListener('change', handleFileSelect);
+    // Initial camera check when Page loads - if on step 1, start camera
+    if (State.currentStep === 1) startCamera();
 
     // Form navigation
     if (Elements.prevBtn) Elements.prevBtn.addEventListener('click', goToPrevStep);
@@ -337,45 +334,94 @@ function animateStatsOnLoad() {
 
 
 // ============================================================
-// File Upload
+// Camera Capture
 // ============================================================
-function handleFileSelect(e) {
-    const file = e.target.files[0];
-    if (file) {
-        processFile(file);
+async function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('Your browser does not support camera access. Please use a modern browser or HTTPS.', 'error');
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'user',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        });
+
+        State.videoStream = stream;
+        if (Elements.cameraStream) {
+            Elements.cameraStream.srcObject = stream;
+            Elements.cameraStream.onloadedmetadata = () => {
+                Elements.cameraStream.play();
+            };
+        }
+
+        // Show camera UI, hide preview
+        if (Elements.videoWrapper) Elements.videoWrapper.classList.remove('hidden');
+        if (Elements.cameraActions) Elements.cameraActions.classList.remove('hidden');
+        if (Elements.previewContent) Elements.previewContent.classList.add('hidden');
+        if (Elements.retakeActions) Elements.retakeActions.classList.add('hidden');
+        if (Elements.cameraView) Elements.cameraView.classList.remove('captured');
+
+    } catch (error) {
+        console.error('Camera access error:', error);
+        showToast('Could not access camera. Please ensure permissions are granted.', 'error');
+
+        // Fallback or show instructions
+        if (Elements.cameraActions) {
+            Elements.cameraActions.innerHTML = `
+                <p class="error-text">Camera access is required for enrollment.</p>
+                <button type="button" class="btn btn-outline btn-sm" onclick="startCamera()">Retry Camera</button>
+            `;
+        }
     }
 }
 
-function handleDragOver(e) {
-    e.preventDefault();
-    if (Elements.uploadArea) Elements.uploadArea.classList.add('drag-over');
-}
+function capturePhoto() {
+    const video = Elements.cameraStream;
+    const canvas = Elements.captureCanvas;
 
-function handleDragLeave(e) {
-    e.preventDefault();
-    if (Elements.uploadArea) Elements.uploadArea.classList.remove('drag-over');
-}
+    if (!video || !canvas) return;
 
-function handleDrop(e) {
-    e.preventDefault();
-    if (Elements.uploadArea) Elements.uploadArea.classList.remove('drag-over');
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-        processFile(file);
-    }
-}
+    const ctx = canvas.getContext('2d');
 
-function processFile(file) {
-    State.selfieFile = file;
+    // Mirror the capture to match the mirrored preview
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        if (Elements.selfiePreview) Elements.selfiePreview.src = e.target.result;
-        if (Elements.uploadContent) Elements.uploadContent.classList.add('hidden');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convert canvas to Blob
+    canvas.toBlob((blob) => {
+        const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
+        State.selfieFile = file;
+
+        // Show preview
+        if (Elements.selfiePreview) Elements.selfiePreview.src = canvas.toDataURL('image/jpeg');
         if (Elements.previewContent) Elements.previewContent.classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
+        if (Elements.videoWrapper) Elements.videoWrapper.classList.add('hidden');
+        if (Elements.cameraActions) Elements.cameraActions.classList.add('hidden');
+        if (Elements.retakeActions) Elements.retakeActions.classList.remove('hidden');
+        if (Elements.cameraView) Elements.cameraView.classList.add('captured');
+
+        // Stop the stream to save energy/resource
+        State.stopVideoStream();
+
+        showToast('Selfie captured!', 'success');
+    }, 'image/jpeg', 0.9);
+}
+
+function retakePhoto() {
+    State.selfieFile = null;
+    startCamera();
 }
 
 
@@ -385,7 +431,7 @@ function processFile(file) {
 function goToNextStep() {
     if (State.currentStep === 1) {
         if (!State.selfieFile) {
-            showToast('Please upload a selfie first', 'error');
+            showToast('Please capture a selfie first', 'error');
             return;
         }
         showStep(2);
@@ -415,8 +461,15 @@ function showStep(step) {
 
     // Update buttons
     if (Elements.prevBtn) Elements.prevBtn.classList.toggle('hidden', step === 1);
-    // if (Elements.nextBtn) Elements.nextBtn.classList.toggle('hidden', step === 2); // logic varies
+    if (Elements.nextBtn) Elements.nextBtn.classList.toggle('hidden', step === 2);
     if (Elements.submitBtn) Elements.submitBtn.classList.toggle('hidden', step !== 2);
+
+    // Handle camera lifecycle during transitions
+    if (step === 1 && !State.selfieFile) {
+        startCamera();
+    } else {
+        State.stopVideoStream();
+    }
 }
 
 
@@ -427,7 +480,7 @@ async function handleSubmit(e) {
     e.preventDefault();
 
     if (!State.selfieFile) {
-        showToast('Please upload a selfie first', 'error');
+        showToast('Please capture a selfie first', 'error');
         return;
     }
 
@@ -522,10 +575,15 @@ function handleTryAgain() {
     State.reset();
     showStep(1);
 
-    // Reset file input
-    if (Elements.selfieInput) Elements.selfieInput.value = '';
-    if (Elements.uploadContent) Elements.uploadContent.classList.remove('hidden');
+    // Reset preview and camera UI
     if (Elements.previewContent) Elements.previewContent.classList.add('hidden');
+    if (Elements.videoWrapper) Elements.videoWrapper.classList.remove('hidden');
+    if (Elements.cameraActions) Elements.cameraActions.classList.remove('hidden');
+    if (Elements.retakeActions) Elements.retakeActions.classList.add('hidden');
+    if (Elements.cameraView) Elements.cameraView.classList.remove('captured');
+
+    // Restart camera
+    startCamera();
 
     // Reset form
     if (Elements.enrollForm) Elements.enrollForm.reset();

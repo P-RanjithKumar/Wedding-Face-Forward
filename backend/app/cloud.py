@@ -81,6 +81,11 @@ class CloudManager:
         self._folder_lock = threading.Lock()  # Thread-safe folder creation
         self._ssl_error_count = 0  # Track SSL errors for service rebuild
         self._rebuild_lock = threading.Lock()  # Prevent concurrent rebuilds
+        self._last_refresh_time = 0.0  # Track when connection was last refreshed
+        # Proactive refresh interval (seconds). Rebuild connection before it goes stale.
+        self._refresh_interval = int(os.getenv('CLOUD_REFRESH_INTERVAL', '90'))
+        self._total_refreshes = 0  # Counter for monitoring
+        self._api_lock = threading.RLock()  # Prevent rebuild during active API calls
         
         self.initialize()
 
@@ -135,7 +140,8 @@ class CloudManager:
             authed_http = google_auth_httplib2.AuthorizedHttp(self.creds, http=http)
             
             self.service = build('drive', 'v3', http=authed_http)
-            logger.info(f"Successfully connected to Google Drive API (timeout={timeout}s)")
+            self._last_refresh_time = time.time()  # Mark connection as fresh
+            logger.info(f"Successfully connected to Google Drive API (timeout={timeout}s, refresh_interval={self._refresh_interval}s)")
             
             # Verify root folder exists
             if not self.root_folder_id:
@@ -150,27 +156,69 @@ class CloudManager:
         """Check if cloud upload is configured and working."""
         return self.service is not None
 
-    def _rebuild_service(self):
-        """Rebuild the Google Drive service when SSL errors indicate a corrupted connection pool."""
+    def _rebuild_service(self, reason: str = "SSL errors"):
+        """Rebuild the Google Drive service completely from scratch.
+        
+        Creates a brand new HTTP client, authorized session, and Drive service.
+        Also clears the folder cache to avoid stale references.
+        
+        IMPORTANT: This must NOT be called while another thread is mid-API-call,
+        as replacing self.service can cause native SSL memory crashes. Use
+        check_and_refresh() between operations instead.
+        
+        Args:
+            reason: Why the rebuild was triggered (for logging).
+        """
         if not self._rebuild_lock.acquire(blocking=False):
             return  # Another thread is already rebuilding
         try:
-            logger.warning(f"Rebuilding Google Drive service after {self._ssl_error_count} SSL errors...")
-            self._ssl_error_count = 0
-            
-            # Rebuild HTTP client and service
-            timeout = max(self.config.upload_timeout_connect, self.config.upload_timeout_read)
-            http = httplib2.Http(
-                timeout=timeout,
-                disable_ssl_certificate_validation=False
-            )
-            authed_http = google_auth_httplib2.AuthorizedHttp(self.creds, http=http)
-            self.service = build('drive', 'v3', http=authed_http)
-            logger.info("Google Drive service rebuilt successfully")
+            # Wait for any in-progress API calls to finish before replacing service
+            with self._api_lock:
+                self._total_refreshes += 1
+                logger.warning(f"[Refresh #{self._total_refreshes}] Rebuilding Google Drive service (reason: {reason})...")
+                self._ssl_error_count = 0
+                
+                # Rebuild HTTP client and service from scratch
+                timeout = max(self.config.upload_timeout_connect, self.config.upload_timeout_read)
+                http = httplib2.Http(
+                    timeout=timeout,
+                    disable_ssl_certificate_validation=False
+                )
+                authed_http = google_auth_httplib2.AuthorizedHttp(self.creds, http=http)
+                self.service = build('drive', 'v3', http=authed_http)
+                
+                # Clear folder cache — folders still exist in Drive, they'll be
+                # re-discovered on the next ensure_folder_path() call.
+                with self._folder_lock:
+                    old_cache_size = len(self._folder_cache)
+                    self._folder_cache.clear()
+                
+                self._last_refresh_time = time.time()  # Reset the timer
+                logger.info(f"[Refresh #{self._total_refreshes}] Google Drive service rebuilt successfully (cleared {old_cache_size} cached folders)")
         except Exception as e:
             logger.error(f"Failed to rebuild Google Drive service: {e}")
         finally:
             self._rebuild_lock.release()
+
+    def check_and_refresh(self):
+        """Check if the connection is stale and rebuild if needed.
+        
+        This should be called BETWEEN upload operations (not during),
+        typically from the upload queue worker loop. This ensures the
+        service object is never replaced while another thread is using it.
+        
+        Returns:
+            True if a refresh was performed, False otherwise.
+        """
+        if not self.is_enabled or not self.creds:
+            return False
+        
+        elapsed = time.time() - self._last_refresh_time
+        if elapsed >= self._refresh_interval:
+            logger.info(f"Connection age {elapsed:.0f}s >= {self._refresh_interval}s refresh interval. Proactively refreshing...")
+            self._rebuild_service(reason=f"proactive refresh after {elapsed:.0f}s")
+            return True
+        return False
 
     @retry_with_backoff(max_retries=3, initial_delay=2)
     def _find_folder(self, name: str, parent_id: Optional[str] = None) -> Optional[str]:

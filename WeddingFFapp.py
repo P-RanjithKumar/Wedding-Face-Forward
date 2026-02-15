@@ -42,21 +42,21 @@ from app.db import get_db
 # Color Theme - Design Guide Palette
 # =============================================================================
 COLORS = {
-    "bg":              ("#ffffff", "#1c1c1e"),       # White / Dark
+    "bg":              ("#f5f5f7", "#1c1c1e"),       # Soft grey / Dark
     "bg_card":         ("#ffffff", "#2c2c2e"),
-    "border":          ("#e0e0e0", "#3a3a3c"),
+    "border":          ("#e8e8ed", "#38383a"),
     "accent":          ("#007aff", "#0a84ff"),
     "success":         ("#34c759", "#30d158"),
     "warning":         ("#ff9500", "#ff9f0a"),
     "error":           ("#ff3b30", "#ff453a"),
-    "text_primary":    ("#1d1d1f", "#ffffff"),
+    "text_primary":    ("#1d1d1f", "#f5f5f7"),
     "text_secondary":  ("#86868b", "#98989d"),
-    # Design guide specific
-    "stat_bg":         ("#FCEFCD", "#3a3227"),       # Light peach / dark variant
-    "stat_highlight":  ("#F6E9B2", "#4a4020"),       # Darker yellow-beige / dark variant
-    "thick_border":    ("#000000", "#555555"),        # Thick black borders
-    "log_outer":       ("#7A7A7A", "#4a4a4a"),       # Dark grey activity log bg
-    "log_inner":       ("#000000", "#111111"),        # Black terminal
+    # Modern card styling
+    "stat_bg":         ("#f0f0f5", "#2c2c2e"),       # Soft neutral / dark variant
+    "stat_highlight":  ("#e8eaf6", "#33335a"),       # Soft lavender / dark variant
+    "thick_border":    ("#e0e0e5", "#444446"),        # Soft subtle borders
+    "log_outer":       ("#1e1e2e", "#1a1a2e"),       # Deep slate for log bg
+    "log_inner":       ("#141422", "#111120"),        # Deep dark for terminal
 }
 
 
@@ -69,7 +69,7 @@ class StatusIndicator(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
         
-        self.dot = ctk.CTkLabel(self, text="●", font=("Segoe UI", 14), text_color=COLORS["text_secondary"])
+        self.dot = ctk.CTkLabel(self, text="●", font=("Segoe UI", 12), text_color=COLORS["text_secondary"])
         self.dot.pack(side="left", padx=(0, 6))
         
         self.label = ctk.CTkLabel(self, text="Stopped", font=("Segoe UI", 13), text_color=COLORS["text_secondary"])
@@ -123,7 +123,7 @@ class SystemHealthIndicator(ctk.CTkFrame):
             parent, 
             fg_color=COLORS["bg_card"], 
             corner_radius=20,
-            border_width=2,
+            border_width=1,
             border_color=COLORS["border"]
         )
         
@@ -219,19 +219,19 @@ class StatCard(ctk.CTkFrame):
     def __init__(self, parent, title: str, value: str = "0", highlight: bool = False):
         bg_color = COLORS["stat_highlight"] if highlight else COLORS["stat_bg"]
         super().__init__(
-            parent, fg_color=bg_color, corner_radius=10,
-            border_width=0
+            parent, fg_color=bg_color, corner_radius=14,
+            border_width=1, border_color=COLORS["border"]
         )
         
         self._bg_color = bg_color
         self.value_label = ctk.CTkLabel(
-            self, text=value, font=("Segoe UI", 28, "bold"),
+            self, text=value, font=("Segoe UI", 26, "bold"),
             text_color=COLORS["text_primary"]
         )
         self.value_label.pack(pady=(18, 4))
         
         self.title_label = ctk.CTkLabel(
-            self, text=title.upper(), font=("Segoe UI", 11, "bold"),
+            self, text=title.upper(), font=("Segoe UI", 10),
             text_color=COLORS["text_primary"]
         )
         self.title_label.pack(pady=(0, 16))
@@ -254,8 +254,8 @@ class StatusCard(ctk.CTkFrame):
     
     def __init__(self, parent, title: str):
         super().__init__(
-            parent, fg_color=COLORS["bg_card"], corner_radius=12,
-            border_width=3, border_color=COLORS["thick_border"]
+            parent, fg_color=COLORS["bg_card"], corner_radius=14,
+            border_width=1, border_color=COLORS["border"]
         )
         
         self.title_label = ctk.CTkLabel(
@@ -291,7 +291,7 @@ class ProcessingWidget(ctk.CTkFrame):
     """Animated circular progress bar with percentage and status."""
     
     def __init__(self, parent):
-        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=3, border_color=COLORS["thick_border"])
+        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=14, border_width=1, border_color=COLORS["border"])
         
         self.title_label = ctk.CTkLabel(
             self, text="PROCESSING", font=("Segoe UI", 12, "bold"),
@@ -458,7 +458,7 @@ class CloudWidget(ctk.CTkFrame):
     """Animated cloud upload status."""
     
     def __init__(self, parent):
-        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12, border_width=3, border_color=COLORS["thick_border"])
+        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=14, border_width=1, border_color=COLORS["border"])
         
         self.title_label = ctk.CTkLabel(
             self, text="CLOUD SYNC", font=("Segoe UI", 12, "bold"),
@@ -543,8 +543,8 @@ class StuckPhotosCard(ctk.CTkFrame):
     
     def __init__(self, parent):
         super().__init__(
-            parent, fg_color=COLORS["bg_card"], corner_radius=12,
-            border_width=3, border_color=COLORS["thick_border"]
+            parent, fg_color=COLORS["bg_card"], corner_radius=14,
+            border_width=1, border_color=COLORS["border"]
         )
         
         self.title_label = ctk.CTkLabel(
@@ -620,13 +620,13 @@ class ActivityLog(ctk.CTkFrame):
     
     def __init__(self, parent):
         super().__init__(
-            parent, fg_color=COLORS["log_outer"], corner_radius=12,
-            border_width=3, border_color=COLORS["thick_border"]
+            parent, fg_color=COLORS["log_outer"], corner_radius=14,
+            border_width=0
         )
         
         self.title_label = ctk.CTkLabel(
-            self, text="ACTIVITY LOG", font=("Segoe UI", 14, "bold"),
-            text_color=("#000000", "#ffffff"), anchor="w"
+            self, text="ACTIVITY LOG", font=("Segoe UI", 12, "bold"),
+            text_color=("#a0a0b0", "#a0a0b0"), anchor="w"
         )
         self.title_label.pack(fill="x", padx=16, pady=(12, 8))
         
@@ -634,8 +634,8 @@ class ActivityLog(ctk.CTkFrame):
         self.textbox = ctk.CTkTextbox(
             self, font=("Consolas", 11),
             fg_color=COLORS["log_inner"],
-            text_color=("#b0b0b0", "#a0a0a0"),
-            corner_radius=8, height=120
+            text_color=("#c0c0d0", "#b0b0c0"),
+            corner_radius=10, height=120
         )
         self.textbox.pack(fill="both", expand=True, padx=12, pady=(0, 12))
         self.textbox.configure(state="disabled")
@@ -714,13 +714,16 @@ class ActivityLog(ctk.CTkFrame):
 class FolderChoicePopup(ctk.CTkToplevel):
     """Floating popup: face thumbnail + Local / Cloud buttons."""
     
-    THUMB_W = 240           # thumbnail width (+10% increase)
-    THUMB_H = 300           # thumbnail height
+    THUMB_W = 230           # thumbnail width (+10% increase)
+    THUMB_H = 290           # thumbnail height
     BTN_AREA_H = 30         # height for the button row
     PADDING = 4             # removed padding to accommodate wider image without growing window
     
     def __init__(self, parent, x, y, person_name, on_local, on_cloud, thumbnail_path=None):
-        super().__init__(parent)
+        # Always parent to the root window to avoid "bad window path" errors
+        # when the scrollable frame widget hierarchy changes (especially on external displays)
+        root = parent.winfo_toplevel()
+        super().__init__(root)
         self.overrideredirect(True)
         self.attributes("-topmost", True)
         
@@ -739,11 +742,11 @@ class FolderChoicePopup(ctk.CTkToplevel):
         popup_h = (self.THUMB_H + self.BTN_AREA_H + self.PADDING * 3 + 4) if has_thumb else (self.BTN_AREA_H + self.PADDING * 2 + 4)
         
         # Outer border frame
-        self.outer_frame = ctk.CTkFrame(self, fg_color=COLORS["thick_border"], corner_radius=14)
+        self.outer_frame = ctk.CTkFrame(self, fg_color=COLORS["border"], corner_radius=16)
         self.outer_frame.pack(padx=0, pady=0)
         
         # Inner card
-        self.frame = ctk.CTkFrame(self.outer_frame, fg_color=bg_color, corner_radius=12, border_width=0)
+        self.frame = ctk.CTkFrame(self.outer_frame, fg_color=bg_color, corner_radius=14, border_width=0)
         self.frame.pack(padx=2, pady=2)
         
         # ---- Thumbnail (clear, clipped to rounded rect) ----
@@ -800,74 +803,105 @@ class FolderChoicePopup(ctk.CTkToplevel):
         btn_w = 30  # Further reduced width to eliminate horizontal empty space
         
         self.btn_local = ctk.CTkButton(
-            btn_row, text="📁 Local", height=26, width=btn_w, corner_radius=13,
+            btn_row, text="📁Local", height=26, width=btn_w, corner_radius=13,
             fg_color=("#e8e8e8", "#2c2c2e"), hover_color=("#d0d0d0", "#3a3a3c"),
             text_color=COLORS["text_primary"],
             font=("Segoe UI", 9),
-            command=lambda: [on_local(), self.destroy()]
+            command=lambda: [on_local(), self._safe_destroy()]
         )
         self.btn_local.pack(side="left", padx=(0, 2))
         
         self.btn_cloud = ctk.CTkButton(
-            btn_row, text="☁ Cloud", height=26, width=btn_w, corner_radius=13,
+            btn_row, text="☁Cloud", height=26, width=btn_w, corner_radius=13,
             fg_color=("#e8e8e8", "#2c2c2e"), hover_color=("#d0d0d0", "#3a3a3c"),
             text_color=COLORS["text_primary"],
             font=("Segoe UI", 9),
-            command=lambda: [on_cloud(), self.destroy()]
+            command=lambda: [on_cloud(), self._safe_destroy()]
         )
         self.btn_cloud.pack(side="left", padx=(2, 0))
         
-        # Position slightly overlapping with cursor
-        self.geometry(f"+{x-5}+{y-5}")
+        # Set explicit size AND position to avoid inconsistent sizing
+        self.geometry(f"{popup_w}x{popup_h}+{x-5}+{y-5}")
         
-        # Grace period before enabling auto-close
+        # Grace period before enabling auto-close (longer for external displays)
         self._can_close = False
-        self.after(200, self._enable_close)
+        self._destroying = False
+        self.after(500, self._enable_close)
         
         # Leave tracking
         self.outer_frame.bind("<Leave>", self._on_mouse_leave)
         self.btn_local.bind("<Enter>", lambda e: self._cancel_close())
         self.btn_cloud.bind("<Enter>", lambda e: self._cancel_close())
 
+    def _safe_destroy(self):
+        """Safely destroy popup, guarding against already-destroyed windows."""
+        if self._destroying:
+            return
+        self._destroying = True
+        try:
+            if self.winfo_exists():
+                self.destroy()
+        except Exception:
+            pass
+
     def _enable_close(self):
+        if self._destroying:
+            return
         self._can_close = True
-        self._check_position_loop()
+        # Wait until window is mapped and has valid geometry before checking position
+        self.after(200, self._check_position_loop)
 
     def _on_mouse_leave(self, event):
-        if self._can_close:
-            self.after(100, self._check_really_left)
+        if self._can_close and not self._destroying:
+            self.after(150, self._check_really_left)
 
     def _check_really_left(self):
-        if not self.winfo_exists(): return
-        mx = self.winfo_pointerx()
-        my = self.winfo_pointery()
-        wx = self.winfo_rootx()
-        wy = self.winfo_rooty()
-        ww = self.winfo_width()
-        wh = self.winfo_height()
-        padding = 10
-        if not (wx-padding <= mx <= wx+ww+padding and wy-padding <= my <= wy+wh+padding):
-            self.destroy()
-
-    def _check_position_loop(self):
-        """Continuously check if mouse is still near the popup."""
-        if not self.winfo_exists(): return
+        if self._destroying:
+            return
         try:
+            if not self.winfo_exists():
+                return
             mx = self.winfo_pointerx()
             my = self.winfo_pointery()
             wx = self.winfo_rootx()
             wy = self.winfo_rooty()
             ww = self.winfo_width()
             wh = self.winfo_height()
-            padding = 20
-            if not (wx-padding <= mx <= wx+ww+padding and wy-padding <= my <= wy+wh+padding):
-                self.destroy()
+            # Sanity check: skip if geometry is not yet valid
+            if ww < 5 or wh < 5:
                 return
-            self.after(100, self._check_position_loop)
-        except:
+            padding = 15
+            if not (wx-padding <= mx <= wx+ww+padding and wy-padding <= my <= wy+wh+padding):
+                self._safe_destroy()
+        except Exception:
+            pass
+
+    def _check_position_loop(self):
+        """Continuously check if mouse is still near the popup."""
+        if self._destroying:
+            return
+        try:
+            if not self.winfo_exists():
+                return
+            mx = self.winfo_pointerx()
+            my = self.winfo_pointery()
+            wx = self.winfo_rootx()
+            wy = self.winfo_rooty()
+            ww = self.winfo_width()
+            wh = self.winfo_height()
+            # Sanity check: skip position checks until geometry is valid
+            if ww < 5 or wh < 5:
+                self.after(200, self._check_position_loop)
+                return
+            padding = 25
+            if not (wx-padding <= mx <= wx+ww+padding and wy-padding <= my <= wy+wh+padding):
+                self._safe_destroy()
+                return
+            self.after(150, self._check_position_loop)
+        except Exception:
             try:
-                self.destroy()
-            except:
+                self._safe_destroy()
+            except Exception:
                 pass
 
     def _cancel_close(self):
@@ -881,7 +915,7 @@ class PeopleList(ctk.CTkScrollableFrame):
     """Person list with pill-shaped items — thick black border, white bg."""
     
     def __init__(self, parent):
-        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=12)
+        super().__init__(parent, fg_color=COLORS["bg_card"], corner_radius=14)
         self._last_hash = None
         self._hover_id = None
         self._popup = None
@@ -992,29 +1026,33 @@ class PeopleList(ctk.CTkScrollableFrame):
 
     def _close_popup(self):
         """Close the popup if it exists."""
-        if self._popup and self._popup.winfo_exists():
-            try:
-                self._popup.destroy()
-            except:
-                pass
+        try:
+            if self._popup and self._popup.winfo_exists():
+                self._popup._safe_destroy()
+        except Exception:
+            pass
         self._popup = None
 
     def _show_choice_popup(self, x, y, person_name, person_id=None, enrollment=None):
         """Show the floating choice menu with optional face thumbnail."""
-        if self._popup and self._popup.winfo_exists():
-            self._popup.destroy()
+        # Close any existing popup safely
+        self._close_popup()
         
         # Get thumbnail
         thumb = None
         if person_id is not None:
             thumb = self._get_person_thumbnail(person_id, person_name, enrollment)
         
-        self._popup = FolderChoicePopup(
-            self, x, y, person_name,
-            on_local=lambda: self._open_person_folder(person_name),
-            on_cloud=lambda: self._open_cloud_folder(person_name),
-            thumbnail_path=thumb
-        )
+        try:
+            self._popup = FolderChoicePopup(
+                self, x, y, person_name,
+                on_local=lambda: self._open_person_folder(person_name),
+                on_cloud=lambda: self._open_cloud_folder(person_name),
+                thumbnail_path=thumb
+            )
+        except Exception:
+            # If popup creation fails (e.g. external display timing issue), just skip
+            self._popup = None
 
     def update_persons(self, persons: list, enrollments: dict):
         current_counts = {}
@@ -1053,7 +1091,7 @@ class PeopleList(ctk.CTkScrollableFrame):
                 # Pill-shaped row: thick black border, fully rounded, white bg
                 row = ctk.CTkFrame(
                     self, fg_color=COLORS["bg_card"], corner_radius=50,
-                    border_width=2, border_color=COLORS["thick_border"],
+                    border_width=1, border_color=COLORS["border"],
                     height=36
                 )
                 row.pack(fill="x", padx=4, pady=3)
@@ -1169,6 +1207,7 @@ class ProcessManager:
         
         env = os.environ.copy()
         env["PYTHONPATH"] = str(BACKEND_DIR) + os.pathsep + str(FRONTEND_DIR) + os.pathsep + env.get("PYTHONPATH", "")
+        env["PYTHONUTF8"] = "1"  # Force UTF-8 for subprocesses on Windows
         
         try:
             self.worker_proc = subprocess.Popen(
@@ -1180,6 +1219,7 @@ class ProcessManager:
                 env=env,
                 bufsize=1,
                 universal_newlines=True,
+                encoding='utf-8',
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
             t = threading.Thread(target=self._read_output, args=(self.worker_proc, "Worker"), daemon=True)
@@ -1200,6 +1240,7 @@ class ProcessManager:
                 env=env,
                 bufsize=1,
                 universal_newlines=True,
+                encoding='utf-8',
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
             t = threading.Thread(target=self._read_output, args=(self.server_proc, "Server"), daemon=True)
@@ -1218,6 +1259,7 @@ class ProcessManager:
                 env=env,
                 bufsize=1,
                 universal_newlines=True,
+                encoding='utf-8',
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
             t = threading.Thread(target=self._read_output, args=(self.whatsapp_proc, "WhatsApp"), daemon=True)
@@ -1371,28 +1413,28 @@ class WeddingFFApp(ctk.CTk):
         
         # START button — pill-shaped, bright green
         self.start_stop_btn = ctk.CTkButton(
-            controls, text="START", width=110, height=38, corner_radius=50,
+            controls, text="▶  START", width=110, height=36, corner_radius=50,
             fg_color=COLORS["success"], hover_color=("#2aa64a", "#248a3d"),
-            font=("Segoe UI", 13, "bold"), text_color="#ffffff",
+            font=("Segoe UI", 12, "bold"), text_color="#ffffff",
             command=self._toggle_system
         )
         self.start_stop_btn.pack(side="left", padx=(0, 10))
         
         # Theme toggle — circular with sun icon
         self.theme_btn = ctk.CTkButton(
-            controls, text="☀", width=38, height=38, corner_radius=50,
+            controls, text="☀", width=36, height=36, corner_radius=50,
             fg_color=COLORS["bg_card"], text_color=("#cc8800", "#ffcc00"),
-            hover_color=("#e5e5e5", "#3a3a3c"), font=("Segoe UI", 18),
-            border_width=2, border_color=COLORS["thick_border"],
+            hover_color=("#ededf0", "#3a3a3c"), font=("Segoe UI", 16),
+            border_width=1, border_color=COLORS["border"],
             command=self._toggle_theme
         )
         self.theme_btn.pack(side="left", padx=(0, 10))
         
         # OPEN FOLDER — pill-shaped, light grey
         ctk.CTkButton(
-            controls, text="OPEN FOLDER", width=120, height=38, corner_radius=50,
-            fg_color=("#e0e0e0", "#3a3a3c"), hover_color=("#d0d0d0", "#48484a"),
-            text_color=COLORS["text_primary"], font=("Segoe UI", 13, "bold"),
+            controls, text="📂  OPEN FOLDER", width=130, height=36, corner_radius=50,
+            fg_color=("#ebebf0", "#3a3a3c"), hover_color=("#dddde2", "#48484a"),
+            text_color=COLORS["text_primary"], font=("Segoe UI", 12, "bold"),
             command=self._open_event_folder
         ).pack(side="left")
         
@@ -1455,14 +1497,14 @@ class WeddingFFApp(ctk.CTk):
         
         # ----- RIGHT COLUMN (Sidebar — People List) -----
         right_sidebar = ctk.CTkFrame(
-            main_content, fg_color=COLORS["bg_card"], corner_radius=12,
-            border_width=3, border_color=COLORS["thick_border"]
+            main_content, fg_color=COLORS["bg_card"], corner_radius=14,
+            border_width=1, border_color=COLORS["border"]
         )
         right_sidebar.grid(row=0, column=1, rowspan=2, sticky="nsew")
         
         ctk.CTkLabel(
-            right_sidebar, text="PEOPLE", font=("Segoe UI", 14, "bold"),
-            text_color=COLORS["text_primary"]
+            right_sidebar, text="PEOPLE", font=("Segoe UI", 13, "bold"),
+            text_color=COLORS["text_secondary"]
         ).pack(anchor="w", padx=16, pady=(14, 8))
         
         self.people_list = PeopleList(right_sidebar)
@@ -1507,7 +1549,7 @@ class WeddingFFApp(ctk.CTk):
         """Called on start error."""
         self.status_indicator.set_stopped()
         self.start_stop_btn.configure(
-            state="normal", text="START",
+            state="normal", text="▶  START",
             fg_color=COLORS["success"], hover_color=("#2aa64a", "#248a3d")
         )
         self.activity_log.add_log(f"Start failed: {error}", "error")
@@ -1530,7 +1572,7 @@ class WeddingFFApp(ctk.CTk):
         """Called when system has stopped."""
         self.status_indicator.set_stopped()
         self.start_stop_btn.configure(
-            state="normal", text="START",
+            state="normal", text="▶  START",
             fg_color=COLORS["success"], hover_color=("#2aa64a", "#248a3d")
         )
         self.activity_log.add_log("System stopped", "info")

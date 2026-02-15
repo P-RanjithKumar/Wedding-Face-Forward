@@ -22,14 +22,16 @@ logger = logging.getLogger(__name__)
 
 def ensure_person_folders(person_id: int, config=None) -> tuple[Path, Path]:
     """
-    Ensure Solo and Group folders exist for a person.
+    Ensure Solo and Group folders exist for a person (LOCAL only).
     Uses the person's name from the database (could be human name if enrolled).
     Returns (solo_path, group_path).
     
-    Also creates the folder structure in Google Cloud Drive immediately for real-time sync.
+    NOTE: Cloud folder creation is intentionally NOT done here.
+    Cloud folders are created on-demand when upload_file() runs during
+    the UPLOADING phase (it calls ensure_folder_path() internally).
+    This prevents rogue cloud API calls during the PROCESSING phase.
     """
     from .db import get_db
-    from .cloud import get_cloud
     
     config = config or get_config()
     db = get_db()
@@ -46,31 +48,9 @@ def ensure_person_folders(person_id: int, config=None) -> tuple[Path, Path]:
     solo_dir = person_dir / "Solo"
     group_dir = person_dir / "Group"
     
-    # Create local folders
+    # Create local folders only
     solo_dir.mkdir(parents=True, exist_ok=True)
     group_dir.mkdir(parents=True, exist_ok=True)
-    
-    # CLOUD SYNC: Create cloud folder structure in background thread
-    # This MUST be non-blocking to prevent SSL/network errors from stalling
-    # the photo processing workers. Cloud folder creation involves network
-    # calls with retries that can take 30-60+ seconds on SSL failures.
-    import threading
-    
-    cloud = get_cloud()
-    if cloud.is_enabled and not config.dry_run:
-        def _create_cloud_folders():
-            try:
-                cloud.ensure_folder_path(["People", person_folder_name, "Solo"])
-                cloud.ensure_folder_path(["People", person_folder_name, "Group"])
-                logger.debug(f"Cloud folders created for: {person_folder_name}")
-            except Exception as e:
-                logger.warning(f"Failed to create cloud folders for {person_folder_name}: {e}")
-        
-        threading.Thread(
-            target=_create_cloud_folders,
-            daemon=True,
-            name=f"CloudFolders-{person_folder_name}"
-        ).start()
     
     return solo_dir, group_dir
 

@@ -112,8 +112,9 @@
             <span>📱</span>
           </div>
           <div class="feature-number">01</div>
-          <h3 class="feature-title">Take a Selfie</h3>
-          <p class="feature-desc">Upload a clear photo of your face. Our AI will use this to find you in all the event
+          <h3 class="feature-title">Take a Live Selfie</h3>
+          <p class="feature-desc">Smile for the camera! Capture a live photo. Our AI will use this to find you in all
+            the event
             photos.</p>
         </div>
         <div class="feature-card">
@@ -146,7 +147,7 @@
           <span class="section-badge">Get Started</span>
           <h2 class="section-title">Find Your Photos</h2>
           <p class="enroll-desc">
-            Upload a selfie and we'll match you to your photos from the event.
+            Capture a live selfie and we'll match you to your photos from the event.
             It only takes a few seconds!
           </p>
           <div class="privacy-note">
@@ -158,17 +159,33 @@
           <form class="enroll-form" id="enrollForm">
             <!-- Step 1: Selfie Upload -->
             <div class="form-step active" id="step-1">
-              <div class="upload-area" id="uploadArea">
-                <input type="file" id="selfieInput" accept="image/*" capture="user" hidden>
-                <div class="upload-content" id="uploadContent">
-                  <div class="upload-icon">📸</div>
-                  <h4>Upload Your Selfie</h4>
-                  <p>Click or drag a photo here</p>
-                  <button type="button" class="btn btn-outline" id="uploadBtn">Choose Photo</button>
+              <div class="camera-container" id="cameraArea">
+                <div class="camera-view-window" id="cameraView">
+                  <div class="camera-stream-wrapper" id="videoWrapper">
+                    <video id="cameraStream" autoplay playsinline muted></video>
+                    <div class="camera-overlay">
+                      <div class="camera-frame"></div>
+                    </div>
+                    <canvas id="captureCanvas" class="hidden"></canvas>
+                  </div>
+
+                  <div class="preview-content hidden" id="previewContent">
+                    <img id="selfiePreview" alt="Selfie preview">
+                  </div>
                 </div>
-                <div class="preview-content hidden" id="previewContent">
-                  <img id="selfiePreview" alt="Selfie preview">
-                  <button type="button" class="btn btn-outline btn-sm" id="changePhotoBtn">Change Photo</button>
+
+                <div class="camera-actions" id="cameraActions">
+                  <button type="button" class="btn btn-primary btn-lg" id="captureBtn">
+                    <span class="btn-icon">📸</span>
+                    Capture Selfie
+                  </button>
+                </div>
+
+                <div class="retake-actions hidden" id="retakeActions">
+                  <button type="button" class="btn btn-outline" id="retakeBtn">
+                    <span class="btn-icon">🔄</span>
+                    Retake Photo
+                  </button>
                 </div>
               </div>
             </div>
@@ -182,8 +199,10 @@
               <div class="form-group">
                 <label for="userPhone" class="form-label">Phone Number *</label>
                 <div class="input-group-row">
-                  <input type="text" id="countryCode" class="form-input input-country-code" value="+91" placeholder="+91" required>
-                  <input type="tel" id="userPhone" name="phone" class="form-input" placeholder="Mobile Number" style="flex: 1;" required>
+                  <input type="text" id="countryCode" class="form-input input-country-code" value="+91"
+                    placeholder="+91" required>
+                  <input type="tel" id="userPhone" name="phone" class="form-input" placeholder="Mobile Number"
+                    style="flex: 1;" required>
                 </div>
               </div>
               <div class="form-group">
