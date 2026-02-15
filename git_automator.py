@@ -45,7 +45,7 @@ class GitWorker(QObject):
                     self.output.emit(stderr)
                 
                 # Git commit returns 1 if there is nothing to commit, which isn't a fatal error for us usually,
-                # but technically it is an error code. 
+                # but technically it is an error code.. 
                 # Git push might return non-zero if upstream is missing, etc.
                 if proc.returncode != 0:
                     # Special handling: if commit failed because "nothing to commit", we can proceed or stop.
