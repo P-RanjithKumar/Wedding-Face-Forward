@@ -11,6 +11,10 @@ client_secret.json
 service_account.json
 backend/service_account.json
 
+# Local planning & credentials backup (never commit)
+infos/MY_CREDENTIALS_BACKUP.txt
+infos/WINDOWS_APP_BUILD_PLAN.txt
+
 # Logs
 *.log
 logs.txt

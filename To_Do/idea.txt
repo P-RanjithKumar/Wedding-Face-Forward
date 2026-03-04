@@ -1,0 +1,64 @@
+Phase 1: Architecture - The "Orchestrator" Pattern
+Currently, your system seems to rely on run.py to launch processes and WeddingFFapp.py for the UI. A professional Windows app needs a single "Main Entry Point" that manages the lifecycle of everything else.
+
+Refactor WeddingFFapp.py to be the Parent Process:
+Instead of running run.py separately, your CustomTkinter app should be the only thing the user launches. It should spawn the Backend Worker (worker.py) and the API Server (server.py) as background threads or subprocesses immediately upon launch.
+
+Graceful Shutdown:
+One of the biggest issues with Python GUI apps is "zombie processes." You must ensure that when the user closes the CustomTkinter window, you explicitly send kill signals to the FastAPI server and the InsightFace worker.
+
+Tip: Use the atexit module or override the WM_DELETE_WINDOW protocol in Tkinter to run a cleanup function before closing.
+
+Phase 2: Configuration - Kill the .env file
+You cannot ask end-users to edit a .env file or paste JSON content into a text file.
+
+Create a "Settings" Tab in CustomTkinter:
+Add a GUI form to input the variables currently in .env (e.g., "Event Name", "Google Drive Folder ID").
+
+Persistent Storage:
+Instead of reading .env, switch your config.py to read from a standard OS application data location (e.g., %APPDATA%\WeddingFaceForward\config.json).
+
+Logic: On startup, check if config.json exists. If not, force the user to a "Setup Wizard" screen within your app.
+
+Google Auth Flow:
+For credentials.json, build a "Import Credentials" button in your UI that opens a file picker, validates the JSON, and copies it to your safe internal storage.
+
+Phase 3: Packaging - The "Freezing" Process
+You need to bundle your Python interpreter and all dependencies into a standalone .exe.
+
+Recommended Tool: PyInstaller
+Do not use auto-py-to-exe (it's just a UI for PyInstaller and hides errors). Write a manual .spec file.
+
+The "Hidden Import" Trap:
+Libraries like insightface, onnxruntime, and uvicorn often use dynamic imports that PyInstaller misses. You will likely need to explicitly add them in your spec file:
+
+Python
+hiddenimports=['insightface', 'onnxruntime', 'uvicorn.loops', 'uvicorn.lifespan.on', 'scipy.special.cython_special']
+Handling Models (The Bloat):
+InsightFace downloads models (like buffalo_l) to ~/.insightface. Your users won't have these.
+
+Solution: Manually download the models, put them in a models/ folder in your project, and use the datas argument in PyInstaller to bundle them inside the _internal folder of your exe.
+
+Code Change: Update your processor.py to look for models in sys._MEIPASS (the temp folder where PyInstaller unpacks files) when running as an exe.
+
+Phase 4: The Installer - "Easy to Install"
+Once PyInstaller gives you a folder with WeddingFF.exe and 500MB of DLLs, you need to wrap that in a single setup file.
+
+Recommended Tool: Inno Setup (Free, Standard for Windows)
+
+What it does: Creates a single setup.exe that:
+
+Installs your app to Program Files.
+
+Creates Desktop/Start Menu shortcuts.
+
+Critical: Can install prerequisites (like Visual C++ Redistributables, which ONNX requires).
+
+File Association: You can even register your app to open specific file types if needed.
+
+Phase 5: Reliability & "Pro" Features
+Log Rotation: Ensure your logs/ folder doesn't grow forever. Implement RotatingFileHandler in your logging config.
+
+System Tray Icon: Use the pystray library. A professional background app should minimize to the system tray (bottom right) rather than closing completely, showing a little icon that indicates "Processing Photos..." status.
+
+Splash Screen: AI models take 5-10 seconds to load. Show a simple splash screen immediately so the user doesn't think the app failed while the heavy imports are happening in the background.

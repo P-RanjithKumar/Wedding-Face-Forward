@@ -1,0 +1,114 @@
+WEDDING FACE FORWARD - PROJECT FILE INVENTORY & SUMMARIES
+Generated on: 2026-02-18
+
+===============================================================================
+ROOT DIRECTORY
+===============================================================================
+
+README.md
+    - Comprehensive project overview, installation guides, and technical details.
+    - Essential for understanding the overall system architecture and setup.
+
+WeddingFFapp.py
+    - The main visual admin dashboard built with CustomTkinter.
+    - Provides real-time monitoring of processing stats, logs, and system control.
+
+run.py
+    - All-in-one runner script that starts both the backend worker and the frontend server.
+    - Uses multiprocessing to coordinate different system components.
+
+project_structure.md
+    - Documentation file providing a detailed breakdown of the folder and file hierarchy.
+
+system_architecture.md
+    - High-level architectural documentation explaining the data flow and technology stack.
+
+git_automator.py
+    - A GUI utility for automated git operations (staging, committing, pushing).
+
+diagnose.py
+    - System health and diagnostic utility for checking configurations and paths.
+
+erase_all_data.py
+    - A cleanup tool to reset the database and event folders for a new event.
+
+reupload_cloud.py
+    - Utility to force-sync local processed files to Google Drive.
+
+credentials.json / token.json
+    - Google Cloud authentication credentials and session tokens for Drive API access.
+
+.env
+    - Environment configuration file defining system paths, thresholds, and keys.
+
+===============================================================================
+BACKEND (/backend)
+===============================================================================
+
+backend/app/
+    - Core logic of the system.
+    - cloud.py: Google Drive API integration and folder management.
+    - cluster.py: AI face clustering and centroid matching logic.
+    - config.py: Centralized configuration management and .env reading.
+    - db.py: SQLite database interface for storing face data and photo metadata.
+    - enrollment.py: Manages guest enrollment and selfie-to-cluster matching.
+    - processor.py: The AI "brain" using InsightFace for face detection and embeddings.
+    - watcher.py: Monitors the 'Incoming' directory for new files.
+    - worker.py: The main background loop that orchestrates the processing pipeline.
+    - router.py: Defines API endpoints for communication with the web UI.
+    - upload_queue.py: Manages the queue and retry logic for cloud uploads.
+
+backend/requirements.txt
+    - Python dependencies for the backend processing engine.
+
+===============================================================================
+FRONTEND (/frontend)
+===============================================================================
+
+frontend/index.html
+    - The primary web entry point for the guest portal and admin interface.
+
+frontend/server.py
+    - FastAPI server that hosts the web interface and handles API requests.
+
+frontend/js/ & frontend/css/
+    - Client-side logic (Vanilla JS) and styling for the premium glassmorphism UI.
+
+===============================================================================
+WHATSAPP TOOL (/whatsapp_tool)
+===============================================================================
+
+whatsapp_tool/db_whatsapp_sender.py
+    - Script using Playwright to automate sending personalized links to guests.
+
+whatsapp_tool/README.md
+    - Setup instructions specifically for the WhatsApp automation component.
+
+===============================================================================
+UTILITIES & TESTS
+===============================================================================
+
+check_*.py (e.g., check_db.py, check_cloud_status.py)
+    - Various lightweight scripts for verifying database integrity and cloud status.
+
+backend/tests/
+    - Automated unit and integration tests for core modules like DB and clustering.
+
+Cleanup_Ports.bat
+    - Windows batch file to kill processes running on system ports (e.g., 8000).
+
+===============================================================================
+DATA & LOGS (Created at Runtime)
+===============================================================================
+
+EventRoot/
+    - The focal point for all event photos.
+    - /Incoming: Where original photos are placed to start the process.
+    - /Processed: Normalized JPEG versions of the photos.
+    - /People: Organized folders for each identified person.
+
+data/wedding.db
+    - The main SQLite database containing all face embeddings and linking info.
+
+logs/
+    - Contains detailed system runtime logs for debugging and monitoring.
