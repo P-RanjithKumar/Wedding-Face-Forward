@@ -1,14 +1,3 @@
-<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" style="height:64px;margin-right:32px"/>
-
-# okay lets go with pyside6 then..
-
-how should i do it ?
-no problems with backend confusion and latency right ??
-
-Great — I've read through your entire `WeddingFFapp.py` in detail. Here's the full migration plan to PySide6, with zero latency concerns and no backend confusion.
-
-***
-
 ## Zero Latency Concerns — Here's Why
 
 Your backend already runs as **separate subprocesses** (`worker_proc`, `server_proc`, `whatsapp_proc`) via `subprocess.Popen`.  PySide6 doesn't touch this at all — that architecture stays 100% identical. The only thing changing is how the UI is drawn. Your `ProcessManager` class moves over **completely unchanged**.[^1]
@@ -20,7 +9,6 @@ The key upgrade is replacing Tkinter's fragile `self.after()` polling with PySid
 ## The Direct Migration Map
 
 Every component in your app maps 1:1:
-
 
 | Your Current CustomTkinter | PySide6 Equivalent |
 | :-- | :-- |
@@ -34,7 +22,6 @@ Every component in your app maps 1:1:
 | `self.after(400, self._pulse)` | `QTimer.singleShot(400, self._pulse)` |
 | `self.after(0, lambda: ...)` from threads | `pyqtSignal` + `emit()` — thread-safe |
 | Light/Dark toggle | `QApplication.setStyle()` + QSS |
-
 
 ***
 
@@ -91,7 +78,6 @@ class ProcessingWidget(QWidget):
         self.update()  # triggers paintEvent — always on UI thread
 ```
 
-
 ***
 
 ## Styling — Rose Gold \& Dark Mode
@@ -145,4 +131,3 @@ The whole migration can realistically be done in **2–3 days** since your logic
 <div align="center">⁂</div>
 
 [^1]: WeddingFFapp.py
-

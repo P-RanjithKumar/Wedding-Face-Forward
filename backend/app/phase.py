@@ -1,17 +1,21 @@
 """
 Phase Coordinator for Wedding Face Forward.
 
-Controls the alternating phases between PROCESSING and UPLOADING:
-  - PROCESSING phase: Workers process photos, cloud upload is paused.
-  - UPLOADING phase: Cloud uploads run, processing workers are paused.
+Controls the alternating phases between PROCESSING and UPLOADING.
+Key design: processing and uploading now run CONCURRENTLY — there is
+no hard pause on processing workers while uploads happen.
+
+  - PROCESSING phase: Workers process photos AND enqueue uploads.
+  - UPLOADING phase: Cloud uploads run in parallel WITH continued processing.
+    Processing workers are NOT paused — we overlap both workloads.
   - Enrollment (user registration) is ALWAYS allowed in both phases.
 
 Flow:
   1. System starts in PROCESSING phase.
-  2. After PROCESS_BATCH_SIZE photos are processed, switch to UPLOADING phase.
-  3. Processing workers pause (they check can_process() before taking jobs).
-  4. Upload queue drains all pending uploads.
-  5. After all uploads complete, refresh cloud connection, then switch back to PROCESSING.
+  2. After PROCESS_BATCH_SIZE photos are processed, trigger UPLOADING phase.
+  3. Processing workers continue working (no pause).
+  4. Upload queue drains all pending uploads concurrently.
+  5. After all uploads complete, refresh cloud connection, switch back to PROCESSING.
   6. Repeat.
 """
 
@@ -85,19 +89,18 @@ class PhaseCoordinator:
     
     def can_process(self, timeout: float = 1.0) -> bool:
         """
-        Check if processing is allowed. Blocks up to `timeout` seconds
-        if we're in the UPLOADING phase.
-        
-        Processing workers should call this before taking a job from the queue.
-        
-        Args:
-            timeout: How long to wait for processing to be allowed (seconds).
-                     Returns False if still in UPLOADING phase after timeout.
-        
+        Check if processing is allowed.
+
+        In concurrent pipeline mode, processing workers are NEVER blocked —
+        this always returns True immediately. Processing and uploading run
+        side-by-side for maximum throughput.
+
+        The timeout parameter is kept for API compatibility but is not used.
+
         Returns:
-            True if processing is allowed, False if still uploading.
+            Always True.
         """
-        return self._processing_allowed.wait(timeout=timeout)
+        return True
     
     def on_photo_processed(self) -> None:
         """
@@ -109,7 +112,10 @@ class PhaseCoordinator:
             count = self._photos_processed_in_batch
             batch = self._batch_size
         
-        if count >= batch:
+        # batch_size=0 means "no batching, keep uploading continuously".
+        # We do NOT switch to uploading on every photo — the flush loop handles
+        # it when the job queue goes idle.
+        if batch > 0 and count >= batch:
             self._switch_to_uploading()
     
     def _switch_to_uploading(self) -> None:
@@ -123,11 +129,12 @@ class PhaseCoordinator:
         
         logger.info(
             f"=== PHASE SWITCH: PROCESSING -> UPLOADING "
-            f"({count} photos processed, batch limit reached) ==="
+            f"({count} photos processed, batch limit reached) "
+            f"[processing continues concurrently] ==="
         )
         
-        # Pause processing workers
-        self._processing_allowed.clear()
+        # NOTE: We do NOT pause processing workers (no _processing_allowed.clear()).
+        # Processing and uploading run concurrently for maximum throughput.
         
         # Signal upload worker to start
         self._uploading_allowed.set()
@@ -145,30 +152,48 @@ class PhaseCoordinator:
         """
         return self._uploading_allowed.wait(timeout=timeout)
     
-    def flush_if_needed(self) -> bool:
+    def flush_if_needed(self, pending_upload_count: int = 0) -> bool:
         """
-        Force a switch to UPLOADING phase if there are processed photos
-        waiting to be uploaded, even if the batch isn't full yet.
-        
-        This handles the case where fewer than batch_size photos exist.
-        Should be called from the main loop when the processing queue is 
-        empty and workers are idle.
-        
+        Force a switch to UPLOADING phase if there are uploads waiting,
+        even if no photos were processed this session.
+
+        This covers two important cases:
+          1. Partial batch: fewer photos processed than batch_size — still
+             need to upload what's pending.
+          2. Restart resume: app restarted with no new photos to process,
+             but the DB has pending uploads left over from the last session.
+             Pass pending_upload_count > 0 to trigger uploads in this case.
+
+        Args:
+            pending_upload_count: Number of pending uploads currently in the DB.
+                                  If > 0, upload phase is triggered even when
+                                  no photos were processed this session.
+
         Returns:
             True if flush was triggered, False if nothing to flush.
         """
         with self._lock:
-            if self._phase != Phase.PROCESSING:
+            if self._phase == Phase.UPLOADING:
                 return False  # Already uploading
-            if self._photos_processed_in_batch == 0:
-                return False  # Nothing processed, nothing to flush
-            
+
+            has_processed = self._photos_processed_in_batch > 0
+            has_pending_uploads = pending_upload_count > 0
+
+            if not has_processed and not has_pending_uploads:
+                return False  # Truly nothing to do
+
             count = self._photos_processed_in_batch
-        
-        logger.info(
-            f"=== FLUSH: Only {count} photos in batch (< {self._batch_size}), "
-            f"but queue is idle. Triggering upload phase. ==="
-        )
+
+        if has_pending_uploads and not has_processed:
+            logger.info(
+                f"=== FLUSH: {pending_upload_count} pending upload(s) in DB from "
+                f"previous session. Triggering upload phase on startup. ==="
+            )
+        else:
+            logger.info(
+                f"=== FLUSH: {count} photo(s) processed (< batch_size={self._batch_size}), "
+                f"queue is idle. Triggering upload phase. ==="
+            )
         self._switch_to_uploading()
         return True
     
@@ -185,14 +210,14 @@ class PhaseCoordinator:
         
         logger.info(
             f"=== PHASE SWITCH: UPLOADING -> PROCESSING "
-            f"(batch #{batch_num} complete, uploads drained) ==="
+            f"(batch #{batch_num} complete, uploads drained) "
+            f"[processing was never paused] ==="
         )
         
         # Pause upload worker
         self._uploading_allowed.clear()
         
-        # Resume processing workers
-        self._processing_allowed.set()
+        # Processing workers were never paused, so no need to resume them
     
     def get_status(self) -> dict:
         """Get current phase coordinator status for monitoring/UI."""

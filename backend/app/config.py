@@ -57,6 +57,7 @@ class Config:
     upload_retry_delay: int
     upload_batch_size: int
     upload_queue_enabled: bool
+    upload_workers: int  # Number of parallel upload threads
     folder_sync_interval: int  # Seconds between folder structure sync checks
     
     @classmethod
@@ -101,6 +102,7 @@ class Config:
             upload_retry_delay=int(os.getenv("UPLOAD_RETRY_DELAY", "2")),
             upload_batch_size=int(os.getenv("UPLOAD_BATCH_SIZE", "5")),
             upload_queue_enabled=os.getenv("UPLOAD_QUEUE_ENABLED", "true").lower() == "true",
+            upload_workers=int(os.getenv("UPLOAD_WORKERS", "4")),
             folder_sync_interval=int(os.getenv("FOLDER_SYNC_INTERVAL", "10")),
         )
     

@@ -174,6 +174,13 @@ CREATE TABLE IF NOT EXISTS upload_queue (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- VIP Pins table: marks specific person clusters as VIP (always appear at top)
+CREATE TABLE IF NOT EXISTS vip_pins (
+    person_id INTEGER PRIMARY KEY REFERENCES persons(id) ON DELETE CASCADE,
+    label TEXT,
+    pinned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_photos_status ON photos(status);
 CREATE INDEX IF NOT EXISTS idx_photos_hash ON photos(file_hash);
@@ -630,6 +637,54 @@ class Database:
                 "processed_path": row[4]
             }
         return None
+
+    # =========================================================================
+    # VIP Pin Operations
+    # =========================================================================
+
+    @retry_on_lock()
+    def pin_person(self, person_id: int, label: Optional[str] = None) -> None:
+        """Mark a person cluster as VIP (pinned to top of admin list)."""
+        conn = self.connect()
+        with conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO vip_pins (person_id, label, pinned_at)
+                   VALUES (?, ?, ?)""",
+                (person_id, label, datetime.now())
+            )
+
+    @retry_on_lock()
+    def unpin_person(self, person_id: int) -> None:
+        """Remove VIP pin from a person cluster."""
+        conn = self.connect()
+        with conn:
+            conn.execute(
+                "DELETE FROM vip_pins WHERE person_id = ?",
+                (person_id,)
+            )
+
+    @retry_on_lock()
+    def is_person_pinned(self, person_id: int) -> bool:
+        """Check whether a person has a VIP pin."""
+        conn = self.connect()
+        cursor = conn.execute(
+            "SELECT 1 FROM vip_pins WHERE person_id = ?",
+            (person_id,)
+        )
+        result = cursor.fetchone() is not None
+        conn.commit()
+        return result
+
+    @retry_on_lock()
+    def get_pinned_person_ids(self) -> List[int]:
+        """Return all pinned person IDs ordered by pin time."""
+        conn = self.connect()
+        cursor = conn.execute(
+            "SELECT person_id FROM vip_pins ORDER BY pinned_at ASC"
+        )
+        rows = cursor.fetchall()
+        conn.commit()
+        return [row[0] for row in rows]
 
     # =========================================================================
     # Enrollment Operations

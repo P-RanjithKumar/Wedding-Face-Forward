@@ -5,7 +5,10 @@ Handles asynchronous uploads to Google Drive with retry logic.
 
 Integrates with the Phase Coordinator:
   - Waits for UPLOADING phase before processing uploads.
-  - Drains ALL pending uploads during the UPLOADING phase.
+  - Drains ALL pending uploads during the UPLOADING phase using a
+    thread pool for parallel uploads (UPLOAD_WORKERS threads).
+  - Processing workers are NOT blocked during the upload phase —
+    processing and uploading run as a true concurrent pipeline.
   - Refreshes the cloud connection after each batch completes.
   - Signals the coordinator to switch back to PROCESSING phase when done.
 """
@@ -13,6 +16,7 @@ Integrates with the Phase Coordinator:
 import logging
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
 
@@ -25,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class UploadQueueManager:
-    """Manages background uploads to Google Drive."""
+    """Manages background uploads to Google Drive with parallel upload workers."""
     
     def __init__(self, config=None):
         self.config = config or get_config()
@@ -34,6 +38,11 @@ class UploadQueueManager:
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._running = False
+        
+        # Stats for monitoring
+        self._stats_lock = threading.Lock()
+        self._total_uploaded = 0
+        self._total_failed = 0
     
     def start(self) -> None:
         """Start the upload queue worker thread."""
@@ -53,7 +62,9 @@ class UploadQueueManager:
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._worker_loop, daemon=True, name="UploadQueue")
         self._thread.start()
-        logger.info("Upload queue worker started (phase-coordinated mode)")
+        logger.info(
+            f"Upload queue worker started (parallel mode: {self.config.upload_workers} upload threads)"
+        )
     
     def stop(self) -> None:
         """Stop the upload queue worker thread."""
@@ -84,15 +95,18 @@ class UploadQueueManager:
     def _worker_loop(self) -> None:
         """
         Main worker loop that processes the upload queue.
-        
-        Phase-coordinated flow:
+
+        Pipeline flow (processing and uploading are concurrent):
           1. Wait for UPLOADING phase signal from coordinator.
-          2. Drain ALL pending + failed uploads.
+          2. Drain ALL pending + failed uploads using a thread pool.
           3. Refresh cloud connection.
           4. Signal coordinator to switch back to PROCESSING.
           5. Repeat.
+
+        NOTE: Processing workers are NOT paused during this phase.
+        Both pipelines run concurrently for maximum throughput.
         """
-        logger.info("Upload queue worker loop started (phase-coordinated)")
+        logger.info("Upload queue worker loop started (concurrent pipeline mode)")
         
         # Recover any uploads stuck in 'uploading' from previous crash/hang
         self._recover_stuck_uploads()
@@ -104,77 +118,90 @@ class UploadQueueManager:
                 # ──────────────────────────────────────────────
                 # WAIT for the UPLOADING phase
                 # ──────────────────────────────────────────────
-                # This blocks until the coordinator signals that
-                # processing workers have finished their batch.
-                # Checks every 2 seconds so we can respond to shutdown.
                 if not coordinator.should_upload(timeout=2.0):
-                    # Not our turn yet — also do periodic time-based refresh
+                    # Not our turn yet — do periodic time-based refresh
                     self.cloud.check_and_refresh()
                     continue
                 
                 # ──────────────────────────────────────────────
-                # UPLOADING PHASE — drain everything
+                # UPLOADING PHASE — drain everything in parallel
                 # ──────────────────────────────────────────────
-                logger.info("=== Upload phase started - draining all pending uploads ===")
+                logger.info(
+                    f"=== Upload phase started - draining all pending uploads "
+                    f"({self.config.upload_workers} parallel threads) ==="
+                )
                 
                 # Recover any stuck uploads first
                 self._recover_stuck_uploads()
                 
-                # Drain loop: keep uploading until nothing is left
                 total_uploaded = 0
                 total_failed = 0
                 drain_rounds = 0
                 
-                while not self._stop_event.is_set():
-                    # Get all pending uploads
-                    pending = self.db.get_pending_uploads(limit=50)  # Larger batch during drain
-                    
-                    # Get retryable failed uploads
-                    failed = self.db.get_failed_uploads(max_retries=self.config.upload_max_retries)
-                    
-                    if not pending and not failed:
-                        # Everything is drained!
-                        break
-                    
-                    drain_rounds += 1
-                    round_count = len(pending) + len(failed)
-                    logger.info(
-                        f"Upload drain round #{drain_rounds}: "
-                        f"{len(pending)} pending + {len(failed)} retrying = {round_count} total"
-                    )
-                    
-                    # Upload pending files
-                    for upload in pending:
-                        if self._stop_event.is_set():
-                            break
-                        success = self._upload_file(upload)
-                        if success:
-                            total_uploaded += 1
-                        else:
-                            total_failed += 1
-                    
-                    # Retry failed uploads
-                    for upload in failed:
-                        if self._stop_event.is_set():
-                            break
-                        
-                        # Brief delay before retry
-                        retry_delay = min(
-                            self.config.upload_retry_delay * (2 ** upload['retry_count']),
-                            10  # Cap at 10s during drain (faster than normal)
+                # Use a thread pool for parallel uploads
+                with ThreadPoolExecutor(
+                    max_workers=self.config.upload_workers,
+                    thread_name_prefix="Uploader"
+                ) as pool:
+                    while not self._stop_event.is_set():
+                        # Fetch pending + retryable failed uploads
+                        # Fetch a generous batch — the pool will work through them
+                        pending = self.db.get_pending_uploads(
+                            limit=self.config.upload_workers * 4
                         )
-                        self._stop_event.wait(timeout=retry_delay)
-                        if self._stop_event.is_set():
+                        failed = self.db.get_failed_uploads(
+                            max_retries=self.config.upload_max_retries
+                        )
+                        
+                        all_uploads = pending + failed
+                        
+                        if not all_uploads:
+                            # Everything is drained!
                             break
                         
-                        success = self._upload_file(upload)
-                        if success:
-                            total_uploaded += 1
-                        else:
-                            total_failed += 1
-                    
-                    # Check for stuck uploads between rounds
-                    self._recover_stuck_uploads()
+                        drain_rounds += 1
+                        logger.info(
+                            f"Upload drain round #{drain_rounds}: "
+                            f"{len(pending)} pending + {len(failed)} retrying "
+                            f"= {len(all_uploads)} total "
+                            f"(submitting to {self.config.upload_workers} threads)"
+                        )
+                        
+                        # Apply retry delay for failed items before submitting them
+                        # We do this by wrapping them in a delayed callable
+                        futures = {}
+                        for upload in all_uploads:
+                            if self._stop_event.is_set():
+                                break
+                            
+                            # For failed (retry) uploads, calculate back-off delay
+                            retry_delay = 0
+                            if upload.get('retry_count', 0) > 0:
+                                retry_delay = min(
+                                    self.config.upload_retry_delay * (2 ** upload['retry_count']),
+                                    10  # Cap at 10s during drain
+                                )
+                            
+                            future = pool.submit(self._upload_file_with_delay, upload, retry_delay)
+                            futures[future] = upload['id']
+                        
+                        # Collect results as they complete
+                        for future in as_completed(futures):
+                            if self._stop_event.is_set():
+                                break
+                            try:
+                                success = future.result()
+                                if success:
+                                    total_uploaded += 1
+                                else:
+                                    total_failed += 1
+                            except Exception as exc:
+                                upload_id = futures[future]
+                                logger.error(f"Upload {upload_id} raised an exception: {exc}")
+                                total_failed += 1
+                        
+                        # Check for newly-stuck uploads between rounds
+                        self._recover_stuck_uploads()
                 
                 # ──────────────────────────────────────────────
                 # UPLOAD PHASE COMPLETE
@@ -184,8 +211,11 @@ class UploadQueueManager:
                     f"{total_failed} failed in {drain_rounds} rounds ==="
                 )
                 
+                with self._stats_lock:
+                    self._total_uploaded += total_uploaded
+                    self._total_failed += total_failed
+                
                 # Refresh cloud connection after completing all uploads
-                # This gives us a fresh connection for the next batch
                 logger.info("Refreshing cloud connection after upload batch...")
                 self.cloud._rebuild_service(reason="post-batch refresh")
                 
@@ -198,6 +228,18 @@ class UploadQueueManager:
         
         logger.info("Upload queue worker loop exited")
     
+    def _upload_file_with_delay(self, upload: dict, delay_seconds: float) -> bool:
+        """
+        Optional pre-delay (for back-off on retries), then upload the file.
+        This is the function submitted to the thread pool.
+        """
+        if delay_seconds > 0:
+            # Respect stop event during the delay
+            self._stop_event.wait(timeout=delay_seconds)
+        if self._stop_event.is_set():
+            return False
+        return self._upload_file(upload)
+    
     def _upload_file(self, upload: dict) -> bool:
         """Upload a single file from the queue. Returns True on success."""
         upload_id = upload['id']
@@ -207,13 +249,12 @@ class UploadQueueManager:
         # Check if file still exists
         if not local_path.exists():
             logger.warning(f"Upload {upload_id}: File no longer exists: {local_path}")
-            # Set retry_count to max so this won't be retried (file is permanently gone)
+            # Set retry_count to max so this won't be retried
             self.db.update_upload_status(
                 upload_id, 'failed', 
                 error='File not found',
                 increment_retry=False
             )
-            # Manually set retry_count to max to prevent retries
             try:
                 conn = self.db.connect()
                 with conn:
@@ -259,8 +300,7 @@ class UploadQueueManager:
     def _recover_stuck_uploads(self) -> None:
         """Reset uploads stuck in 'uploading' status back to 'pending'.
         
-        This handles cases where uploads get stuck due to crashes, network
-        timeouts, or other failures that prevent the status from being updated.
+        Handles crashes, network timeouts, or other failures.
         Uploads in 'uploading' status for more than 5 minutes are considered stuck.
         """
         try:
@@ -272,7 +312,11 @@ class UploadQueueManager:
     
     def get_stats(self) -> dict:
         """Get upload queue statistics."""
-        return self.db.get_upload_stats()
+        stats = self.db.get_upload_stats()
+        with self._stats_lock:
+            stats['session_uploaded'] = self._total_uploaded
+            stats['session_failed'] = self._total_failed
+        return stats
 
 
 # Global instance

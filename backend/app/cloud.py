@@ -8,12 +8,14 @@ import os
 import ssl
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Dict
 from functools import wraps
 
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials as UserCredentials
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from googleapiclient.errors import HttpError
@@ -75,7 +77,7 @@ class CloudManager:
     def __init__(self, config=None):
         self.config = config or get_config()
         self.creds = None
-        self.service = None
+        self.service = None  # Main service (folder management, not used for parallel uploads)
         self.root_folder_id = self.config.drive_root_folder_id
         self._folder_cache: Dict[str, str] = {}  # Cache path -> folder_id
         self._folder_lock = threading.Lock()  # Thread-safe folder creation
@@ -86,6 +88,10 @@ class CloudManager:
         self._refresh_interval = int(os.getenv('CLOUD_REFRESH_INTERVAL', '90'))
         self._total_refreshes = 0  # Counter for monitoring
         self._api_lock = threading.RLock()  # Prevent rebuild during active API calls
+        
+        # Thread-local storage: each upload thread gets its OWN httplib2 + service.
+        # httplib2 is NOT thread-safe — sharing it causes SSL WRONG_VERSION_NUMBER errors.
+        self._thread_local = threading.local()
         
         self.initialize()
 
@@ -116,7 +122,29 @@ class CloudManager:
             if token_path and token_path.exists():
                 logger.info(f"Loading user credentials from {token_path}")
                 self.creds = UserCredentials.from_authorized_user_file(str(token_path), SCOPES)
-            
+
+                # ── Auth Persistence: proactively refresh expired token ──────
+                # If the access token is expired but we have a refresh_token,
+                # silently obtain a new access token and save it to disk.
+                # This avoids silent 401 failures during uploads and removes
+                # the need to run setup_auth.py manually.
+                if self.creds.expired and self.creds.refresh_token:
+                    try:
+                        logger.info("Access token expired — refreshing via refresh_token...")
+                        self.creds.refresh(Request())
+                        token_path.write_text(self.creds.to_json(), encoding="utf-8")
+                        logger.info(f"Token refreshed and saved to {token_path}")
+                    except Exception as refresh_err:
+                        logger.warning(
+                            f"Could not auto-refresh token: {refresh_err}. "
+                            "Open the 🔑 AUTH dialog in the dashboard to re-authenticate."
+                        )
+                elif not self.creds.refresh_token:
+                    logger.warning(
+                        "token.json has no refresh_token. "
+                        "Open the 🔑 AUTH dialog to re-authenticate."
+                    )
+
             # Fallback to Service Account
             elif creds_path and creds_path.exists():
                 logger.info(f"Loading service account from {creds_path}")
@@ -156,6 +184,41 @@ class CloudManager:
         """Check if cloud upload is configured and working."""
         return self.service is not None
 
+    def _get_thread_service(self):
+        """
+        Get (or lazily create) a Drive service instance local to THIS thread.
+
+        httplib2.Http is NOT thread-safe. When multiple upload threads share
+        the same service object they corrupt each other's SSL connection state,
+        causing 'WRONG_VERSION_NUMBER' errors.
+
+        This method returns a per-thread service so every upload thread owns
+        its own HTTP stack. Credentials are shared (they are read-only) but
+        the transport layer is completely isolated.
+        """
+        if not self.creds:
+            return self.service  # Fallback for unauthenticated path
+        
+        if not getattr(self._thread_local, 'service', None):
+            timeout = max(
+                self.config.upload_timeout_connect,
+                self.config.upload_timeout_read
+            )
+            http = httplib2.Http(
+                timeout=timeout,
+                disable_ssl_certificate_validation=False
+            )
+            authed_http = google_auth_httplib2.AuthorizedHttp(self.creds, http=http)
+            self._thread_local.service = build('drive', 'v3', http=authed_http)
+            logger.debug(
+                f"[{threading.current_thread().name}] Created thread-local Drive service"
+            )
+        return self._thread_local.service
+
+    def _invalidate_thread_service(self):
+        """Force the current thread to rebuild its Drive service on next use."""
+        self._thread_local.service = None
+
     def _rebuild_service(self, reason: str = "SSL errors"):
         """Rebuild the Google Drive service completely from scratch.
         
@@ -186,6 +249,9 @@ class CloudManager:
                 )
                 authed_http = google_auth_httplib2.AuthorizedHttp(self.creds, http=http)
                 self.service = build('drive', 'v3', http=authed_http)
+                
+                # Also invalidate this thread's local service so it rebuilds on next use
+                self._invalidate_thread_service()
                 
                 # Clear folder cache — folders still exist in Drive, they'll be
                 # re-discovered on the next ensure_folder_path() call.
@@ -230,7 +296,8 @@ class CloudManager:
         if parent_id:
             query += f" and '{parent_id}' in parents"
             
-        results = self.service.files().list(
+        svc = self._get_thread_service()
+        results = svc.files().list(
             q=query, fields="files(id, name)", pageSize=1
         ).execute()
         
@@ -272,7 +339,8 @@ class CloudManager:
         
         try:
             # Rename in-place via Drive API
-            self.service.files().update(
+            svc = self._get_thread_service()
+            svc.files().update(
                 fileId=folder_id,
                 body={'name': new_name}
             ).execute()
@@ -319,7 +387,8 @@ class CloudManager:
             logger.info(f"[DRY RUN] Would create cloud folder: {name}")
             return "dry_run_folder_id"
 
-        result = self.service.files().create(
+        svc = self._get_thread_service()
+        result = svc.files().create(
             body=metadata, fields='id'
         ).execute()
         
@@ -472,7 +541,14 @@ class CloudManager:
 
     @retry_with_backoff(max_retries=3, initial_delay=2)
     def _upload_file_with_retry(self, local_path: Path, parent_folder_id: str) -> bool:
-        """Perform the actual file upload with retry on transient errors."""
+        """Perform the actual file upload using a thread-local Drive service.
+        
+        Each upload thread uses its own httplib2 instance to avoid SSL
+        corruption errors caused by concurrent access to a shared service.
+        """
+        # Use thread-local service to avoid httplib2 thread-safety issues
+        thread_service = self._get_thread_service()
+        
         file_metadata = {
             'name': local_path.name,
             'parents': [parent_folder_id]
@@ -483,7 +559,7 @@ class CloudManager:
             resumable=True
         )
         
-        result = self.service.files().create(
+        result = thread_service.files().create(
             body=file_metadata,
             media_body=media,
             fields='id'
@@ -505,7 +581,8 @@ class CloudManager:
         if not self.is_enabled:
             return None
         try:
-            file = self.service.files().get(
+            svc = self._get_thread_service()
+            file = svc.files().get(
                 fileId=folder_id, fields='webViewLink'
             ).execute()
             return file.get('webViewLink')
@@ -528,7 +605,8 @@ class CloudManager:
             # Check if already shared (optional optimization, but API is idempotent enough usually)
             # For simplicity, we just apply it. valid roles: reader, commenter, writer
             # valid types: user, group, domain, anyone
-            self.service.permissions().create(
+            svc = self._get_thread_service()
+            svc.permissions().create(
                 fileId=folder_id,
                 body={'role': 'reader', 'type': 'anyone'},
                 fields='id'
@@ -547,3 +625,61 @@ def get_cloud() -> CloudManager:
     if _cloud is None:
         _cloud = CloudManager()
     return _cloud
+
+
+def get_auth_status() -> dict:
+    """Return a snapshot of the current auth token status.
+
+    Returns:
+        dict with keys:
+            token_exists (bool): Whether token.json was found.
+            token_valid  (bool): Token is not expired (or can be refreshed).
+            token_expired (bool): Access token has passed its expiry time.
+            has_refresh  (bool): A refresh_token is present.
+            expiry_str   (str):  Human-readable expiry datetime string.
+    """
+    # Mirrors the search paths used by CloudManager.initialize()
+    base = Path(__file__).parent.parent.parent.resolve()
+    possible_paths = [
+        base / "token.json",
+        base / "backend" / "token.json",
+        Path("token.json").resolve(),
+        Path("backend/token.json").resolve(),
+    ]
+
+    token_path = next((p for p in possible_paths if p.exists()), None)
+    if token_path is None:
+        return {
+            "token_exists": False, "token_valid": False,
+            "token_expired": True, "has_refresh": False,
+            "expiry_str": "N/A",
+        }
+
+    try:
+        import json
+        data = json.loads(token_path.read_text(encoding="utf-8"))
+        has_refresh = bool(data.get("refresh_token"))
+        expiry_raw = data.get("expiry") or data.get("token_expiry")
+        expired = True
+        expiry_str = "Unknown"
+        if expiry_raw:
+            try:
+                expiry_dt = datetime.fromisoformat(expiry_raw.replace("Z", "+00:00"))
+                now = datetime.now(timezone.utc)
+                expired = expiry_dt <= now
+                expiry_str = expiry_dt.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+            except Exception:
+                expiry_str = expiry_raw
+        return {
+            "token_exists": True,
+            "token_valid": (not expired) or has_refresh,
+            "token_expired": expired,
+            "has_refresh": has_refresh,
+            "expiry_str": expiry_str,
+        }
+    except Exception as e:
+        return {
+            "token_exists": True, "token_valid": False,
+            "token_expired": True, "has_refresh": False,
+            "expiry_str": f"Error: {e}",
+        }

@@ -433,12 +433,14 @@ def main():
                     
                     # If the queue is idle and workers aren't busy,
                     # flush any partial batch to trigger uploads.
-                    # This handles the case where fewer than batch_size
-                    # photos exist (e.g., only 5 photos with batch_size=20).
+                    # Also handles restart resume: if the DB has pending uploads
+                    # from a previous session (and no new photos arrived),
+                    # we still need to kick off the upload phase.
                     if status["active"] == 0 and queue_size == 0:
                         coordinator = get_coordinator()
-                        if coordinator.photos_in_current_batch > 0:
-                            coordinator.flush_if_needed()
+                        upload_stats = db.get_upload_stats()
+                        pending_count = upload_stats.get("pending", 0) if upload_stats else 0
+                        coordinator.flush_if_needed(pending_upload_count=pending_count)
                 
                 # Periodically check for stuck processing photos (~every 2 minutes)
                 if main_loop_count % 24 == 0:

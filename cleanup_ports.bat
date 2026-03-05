@@ -17,5 +17,5 @@ taskkill /F /IM chrome.exe /T 2>nul
 taskkill /F /IM chromium.exe /T 2>nul
 
 echo.
-echo cleanup complete! You can now restart WeddingFFapp.py
+echo cleanup complete! You can now restart run_pyside.py
 pause
