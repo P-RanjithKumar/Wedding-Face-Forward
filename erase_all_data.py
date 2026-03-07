@@ -22,8 +22,8 @@ from pathlib import Path
 import dist_utils
 from app.config import get_config
 
-# Fix Windows console encoding for emojis
-if sys.platform == 'win32':
+# Fix Windows console encoding for emojis (only when a real console stdout exists)
+if sys.platform == 'win32' and sys.stdout is not None and hasattr(sys.stdout, 'buffer'):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def clear_directory_contents(dir_path, delete_subdirs=True):
@@ -143,7 +143,7 @@ def main(auto_confirm=False):
 
     # 4. Reset WhatsApp state (but keep session)
     print("\n📱 Resetting WhatsApp queue...")
-    wa_state = dist_utils.get_whatsapp_dir() / "message_state_db.json"
+    wa_state = dist_utils.get_user_data_dir() / "whatsapp_data" / "message_state_db.json"
     if wa_state.exists():
         try:
             with open(wa_state, 'w') as f:

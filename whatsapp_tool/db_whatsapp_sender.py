@@ -9,14 +9,19 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 
 # --- Setup Paths ---
-# Add backend to sys.path to import app modules
-current_dir = Path(__file__).parent.resolve()
+# Use dist_utils for reliable path resolution in both dev and frozen (PyInstaller) mode.
+# NOTE: Path(__file__) is NOT reliable when this script is loaded via runpy.run_path()
+# inside a frozen .exe — the __file__ attribute may point inside the bundle's temp dir.
 try:
-    sys.path.insert(0, str(current_dir.parent))  # For dist_utils
     import dist_utils
     backend_path = dist_utils.get_backend_dir()
+    sys.path.insert(0, str(dist_utils.get_bundled_root()))  # For dist_utils itself if not found
 except ImportError:
-    backend_path = current_dir.parent / "backend"
+    # Fallback for standalone execution (dev mode without dist_utils on path)
+    current_dir = Path(__file__).parent.resolve()
+    sys.path.insert(0, str(current_dir.parent))
+    import dist_utils
+    backend_path = dist_utils.get_backend_dir()
 sys.path.insert(0, str(backend_path))
 
 from app.config import get_config

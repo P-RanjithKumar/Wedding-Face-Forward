@@ -31,8 +31,34 @@ if __name__ == "__main__":
             uvicorn.run(fastapi_app, host='0.0.0.0', port=8000, log_level='warning')
             sys.exit(0)
         elif flag == "--run-whatsapp":
-            import runpy
-            runpy.run_path(str(dist_utils.get_whatsapp_dir() / "db_whatsapp_sender.py"))
+            try:
+                import asyncio
+                # Remove our routing flag so argparse inside the script doesn't choke
+                sys.argv = [sys.argv[0]]
+                
+                # Tell Playwright where to find browser binaries.
+                # When bundled by PyInstaller, playwright looks inside _internal/
+                # for a .local-browsers folder that doesn't exist. Point it to the
+                # system-wide location where 'playwright install' puts browsers.
+                import os
+                if "PLAYWRIGHT_BROWSERS_PATH" not in os.environ:
+                    default_browsers = os.path.join(
+                        os.environ.get("LOCALAPPDATA", ""), "ms-playwright"
+                    )
+                    if os.path.isdir(default_browsers):
+                        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = default_browsers
+                
+                # Add whatsapp_tool to path so db_whatsapp_sender's relative imports work
+                wa_dir = str(dist_utils.get_whatsapp_dir())
+                if wa_dir not in sys.path:
+                    sys.path.insert(0, wa_dir)
+                from whatsapp_tool.db_whatsapp_sender import main as wa_main
+                asyncio.run(wa_main())
+            except Exception as e:
+                # Use errors='replace' to avoid cp1252 crash on Unicode chars
+                print(f"WhatsApp launcher error: {e}".encode('ascii', errors='replace').decode(), flush=True)
+                import traceback
+                traceback.print_exc()
             sys.exit(0)
         elif flag == "--playwright-install":
             import sys

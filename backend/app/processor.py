@@ -38,6 +38,7 @@ def _get_face_analyzer():
         try:
             from insightface.app import FaceAnalysis
             from .gpu_manager import get_execution_config
+            import dist_utils
             
             config = get_config()
             exec_config = get_execution_config(
@@ -45,13 +46,17 @@ def _get_face_analyzer():
                 gpu_device_id=config.gpu_device_id,
             )
             
+            # Use bundled models in frozen mode, ~/.insightface in dev mode
+            model_root = str(dist_utils.get_insightface_root())
+            
             thread_name = threading.current_thread().name
             logger.info(
                 f"Loading InsightFace model (buffalo_l) for thread {thread_name} "
-                f"— mode: {exec_config.mode}"
+                f"— mode: {exec_config.mode}, root: {model_root}"
             )
             analyzer = FaceAnalysis(
                 name="buffalo_l",
+                root=model_root,
                 providers=exec_config.providers
             )
             analyzer.prepare(ctx_id=exec_config.ctx_id, det_size=(640, 640))

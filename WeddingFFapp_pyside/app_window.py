@@ -152,6 +152,7 @@ class WeddingFFApp(QMainWindow):
         self.bridge.system_started.connect(self._on_system_started)
         self.bridge.system_stopped.connect(self._on_system_stopped)
         self.bridge.start_error.connect(self._on_start_error)
+        self.bridge.restart_requested.connect(self._restart_app)
 
         # Build UI
         self._create_ui()
@@ -437,6 +438,7 @@ class WeddingFFApp(QMainWindow):
         self.activity_log.add_log("System running! Worker + Web server active", "success")
         self.activity_log.add_log("Web UI: http://localhost:8000", "info")
         self._log_to_session("[APP] System started successfully")
+        self.wa_tracker.set_system_active(True)
 
     def _on_start_error(self, error: str):
         """Called on start error — on UI thread via signal."""
@@ -473,6 +475,7 @@ class WeddingFFApp(QMainWindow):
         self.start_stop_btn.style().polish(self.start_stop_btn)
         self.activity_log.add_log("System stopped", "info")
         self._log_to_session("[APP] System stopped successfully")
+        self.wa_tracker.set_system_active(False)
 
     # =====================================================================
     # Stats Refresh
@@ -552,7 +555,7 @@ class WeddingFFApp(QMainWindow):
             self._update_stuck_photos_from_data(photos_by_status)
 
             # ── WhatsApp delivery tracker ─────────────────────────────────────
-            self.wa_tracker.refresh()
+            self.wa_tracker.refresh(stats.get("total_enrollments", 0))
 
             # ── System health ─────────────────────────────────────────────────
             self._update_system_health(processing, pending, incoming, upload_stats)
@@ -757,12 +760,53 @@ class WeddingFFApp(QMainWindow):
                 erase_all_data.main(auto_confirm=True)
                 
                 # Use signal to avoid cross-thread UI updates
-                self.bridge.log_received.emit("System reset complete. Please restart the app for a fresh start.", "success")
+                self.bridge.log_received.emit("System reset complete. Restarting application...", "success")
+                
+                # Give the user 2 seconds to see the message before restarting
+                time.sleep(2)
+                self.bridge.restart_requested.emit()
             except Exception as e:
                 self.bridge.log_received.emit(f"Error erasing data: {e}", "error")
 
         import threading
         threading.Thread(target=_do_erase, daemon=True).start()
+
+    def _restart_app(self):
+        """Prompt user and re-launch the current application."""
+        from PySide6.QtWidgets import QMessageBox
+        
+        reply = QMessageBox.information(
+            self,
+            "Reset Complete",
+            "System reset is complete!\n\n"
+            "It is highly recommended to restart the application now to ensure "
+            "all database connections and logs are cleanly initialized for a fresh start.\n\n"
+            "Would you like to restart now?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes
+        )
+        
+        if reply == QMessageBox.StandardButton.No:
+            self.activity_log.add_log("Restart declined. Manual restart is recommended.", "warning")
+            return
+
+        self._log_to_session("[APP] User initiated automatic restart")
+        if self.session_log_file:
+            try:
+                self.session_log_file.close()
+            except Exception:
+                pass
+        
+        import subprocess
+        
+        # In PyInstaller, sys.executable is the .exe itself. In dev mode, it's python.exe.
+        if getattr(sys, 'frozen', False):
+            subprocess.Popen([sys.executable])
+        else:
+            subprocess.Popen([sys.executable] + sys.argv)
+        
+        # Give a moment for the new process to start, then quit this one
+        QApplication.quit()
 
     def _open_auth_dialog(self):
         """Open the Google Drive Auth Manager dialog."""

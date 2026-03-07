@@ -58,7 +58,6 @@ OutputBaseFilename=WeddingFaceForward_Setup_{#MyAppVersion}
 ; Appearance
 SetupIconFile=WeddingFFapp_pyside\assets\logo.ico
 WizardStyle=modern
-WizardResizable=yes
 WizardSizePercent=120
 
 ; Uninstall

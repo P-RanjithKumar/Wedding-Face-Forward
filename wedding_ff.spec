@@ -85,6 +85,15 @@ hidden_imports = [
     # whatsapp_tool
     'whatsapp_tool.db_whatsapp_sender',
 
+    # ── Playwright (WhatsApp browser automation) ──────────
+    'playwright',
+    'playwright.async_api',
+    'playwright._impl',
+    'playwright._impl._api_types',
+    'playwright._impl._connection',
+    'playwright._impl._driver',
+    'playwright._impl._transport',
+
     # ── InsightFace (notorious for missing submodules) ────
     'insightface',
     'insightface.app',
@@ -226,6 +235,7 @@ hidden_imports += collect_submodules('uvicorn')
 hidden_imports += collect_submodules('sklearn')
 hidden_imports += collect_submodules('google.auth')
 hidden_imports += collect_submodules('googleapiclient')
+hidden_imports += collect_submodules('playwright')
 
 # Deduplicate
 hidden_imports = list(set(hidden_imports))
@@ -265,6 +275,10 @@ datas = [
     (os.path.join(BACKEND_DIR, 'service_account.json'), os.path.join('backend', '.')),
 ]
 
+# Include token.json if it exists (carry over dev auth)
+if os.path.exists(os.path.join(PROJECT_ROOT, 'token.json')):
+    datas.append((os.path.join(PROJECT_ROOT, 'token.json'), '.'))
+
 # InsightFace ONNX models (~325 MB)
 # Bundle them so the app works offline immediately after install
 if os.path.isdir(MODELS_SRC):
@@ -281,6 +295,12 @@ datas += collect_data_files('sklearn')
 datas += collect_data_files('certifi')
 datas += collect_data_files('google_auth_oauthlib')
 datas += collect_data_files('pydantic')
+
+# Playwright driver (node.js executable + protocol files)
+try:
+    datas += collect_data_files('playwright')
+except Exception:
+    print("WARNING: Could not collect playwright data files")
 
 
 # ─────────────────────────────────────────────────────────

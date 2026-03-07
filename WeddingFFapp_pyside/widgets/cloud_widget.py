@@ -142,10 +142,14 @@ class CloudWidget(QFrame):
 
         if total > 0:
             self._target_progress = min(uploaded / total, 1.0)
-            self.bar._progress = self._target_progress
             pct = int((uploaded / total) * 100)
             self.progress_label.setText(f"{uploaded} / {total}")
             if uploaded >= total:
+                # Snap to 100% immediately — don't rely on animation to catch up
+                self._current_progress = 1.0
+                self._target_progress = 1.0
+                self.bar._progress = 1.0
+                self.bar.update()
                 self.pct_label.setText("100%")
                 self.pct_label.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {c('success', self._mode)};")
             else:
@@ -153,7 +157,9 @@ class CloudWidget(QFrame):
                 self.pct_label.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {c('text_primary', self._mode)};")
         else:
             self._target_progress = 0.0
+            self._current_progress = 0.0
             self.bar._progress = 0.0
+            self.bar.update()
             self.pct_label.setText("--")
             self.pct_label.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {c('text_secondary', self._mode)};")
             self.progress_label.setText("—")
@@ -162,6 +168,9 @@ class CloudWidget(QFrame):
         if self._uploading:
             self._uploading = False
             self._anim_timer.stop()
+            # Snap the bar to the target so it doesn't freeze at an intermediate value
+            self._current_progress = self._target_progress
+            self.bar._progress = self._target_progress
             color = c("success", self._mode)
             self.status_label.setText("Synced")
             self.status_label.setStyleSheet(f"color: {color};")

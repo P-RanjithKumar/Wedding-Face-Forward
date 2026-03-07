@@ -136,6 +136,13 @@ def process_single_photo(
             )
             db._cleanup_orphaned_faces([photo_id])
         
+        # Check if already processing/completed to avoid duplicates from race conditions
+        current_photo = db.get_photo_by_id(photo_id)
+        if current_photo and current_photo.status in ("processing", "completed", "no_faces"):
+            logger.debug(f"Photo {photo_id} already in phase: {current_photo.status}, skipping duplicate processing.")
+            progress.on_complete()
+            return True
+
         # Update status to processing
         db.update_photo_status(photo_id, "processing")
         

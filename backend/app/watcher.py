@@ -231,9 +231,6 @@ class Watcher:
         # Start periodic scanner
         self._scanner = DirectoryScanner(self.job_queue, self.stop_event, self.config)
         self._scanner.start()
-        
-        # Do an immediate scan
-        self._scanner._scan_directory()
     
     def stop(self) -> None:
         """Stop all watchers."""

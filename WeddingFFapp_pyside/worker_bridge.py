@@ -22,3 +22,4 @@ class WorkerBridge(QObject):
     system_started = Signal()
     system_stopped = Signal()
     start_error = Signal(str)             # error message
+    restart_requested = Signal()          # Re-launch application

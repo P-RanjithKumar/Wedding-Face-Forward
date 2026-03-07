@@ -107,12 +107,16 @@ class ProcessManager:
                 cwd=str(BASE_DIR),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL,   # No stdin needed; avoids pipe issues
                 env=env,
                 bufsize=1,
                 universal_newlines=True,
                 encoding='utf-8',
                 errors='replace',
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                # NOTE: Do NOT use CREATE_NO_WINDOW here!
+                # Playwright launches Chromium as a child process and that window
+                # must be visible so the user can scan the QR code and see messages.
+                creationflags=0
             )
             t = threading.Thread(
                 target=self._read_output,

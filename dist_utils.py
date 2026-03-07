@@ -244,6 +244,7 @@ def bootstrap_user_data():
     files_to_copy = [
         (".env", ".env"),
         ("credentials.json", "credentials.json"),
+        ("token.json", "token.json"),
         ("backend/service_account.json", "service_account.json"),
     ]
 

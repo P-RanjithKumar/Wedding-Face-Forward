@@ -135,15 +135,22 @@ class ProcessingWidget(QFrame):
         self._completed = completed
         self._total = total
         self._target_progress = min(completed / total, 1.0) if total > 0 else 0.0
-        self.bar._progress = self._target_progress  # will be smoothed by anim
 
         if total == 0:
+            self._current_progress = 0.0
+            self.bar._progress = 0.0
+            self.bar.update()
             self.pct_label.setText("--")
             self.pct_label.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {c('text_secondary', self._mode)};")
             self.progress_label.setText("No photos")
             self.status_label.setText("Idle")
             self.status_label.setStyleSheet(f"color: {c('text_secondary', self._mode)};")
         elif completed >= total:
+            # Snap to 100% immediately — don't rely on animation to catch up
+            self._current_progress = 1.0
+            self._target_progress = 1.0
+            self.bar._progress = 1.0
+            self.bar.update()
             self.pct_label.setText("100%")
             self.pct_label.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {c('success', self._mode)};")
             self.progress_label.setText(f"{completed} / {total}")
@@ -165,6 +172,10 @@ class ProcessingWidget(QFrame):
     def stop_processing(self):
         self._animating = False
         self._anim_timer.stop()
+        # Snap the bar to the target so it doesn't freeze at an intermediate value
+        self._current_progress = self._target_progress
+        self.bar._progress = self._target_progress
+        self.bar.update()
         if self._total == 0:
             self.status_label.setText("Idle")
             self.status_label.setStyleSheet(f"color: {c('text_secondary', self._mode)};")

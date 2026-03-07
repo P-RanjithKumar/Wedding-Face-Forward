@@ -144,10 +144,20 @@ class FolderChoicePopup(QWidget):
             pass
 
     def _enable_close(self):
+        """Enable auto-close after grace period."""
         if self._destroying:
             return
         self._can_close = True
-        QTimer.singleShot(200, lambda: self._check_timer.start())
+        # Use named method instead of lambda to avoid capturing stale state
+        QTimer.singleShot(200, self._start_check_loop)
+
+    def _start_check_loop(self):
+        """Safely start the position monitoring loop."""
+        if not self._destroying and hasattr(self, "_check_timer"):
+            try:
+                self._check_timer.start()
+            except RuntimeError:
+                pass  # C++ object likely gone
 
     def _check_position_loop(self):
         """Check if mouse is still near the popup."""
@@ -164,6 +174,7 @@ class FolderChoicePopup(QWidget):
             self._safe_destroy()
 
     def leaveEvent(self, event):
+        """On mouse leave, verify if we should close after a tiny buffer."""
         if self._can_close and not self._destroying:
             QTimer.singleShot(150, self._check_really_left)
 
