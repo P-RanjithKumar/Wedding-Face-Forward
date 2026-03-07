@@ -18,8 +18,11 @@ class GitWorker(QObject):
         self.commit_msg = commit_msg
 
     def run(self):
+        # Using -u (tracked files only) + targeted patterns for new source files 
+        # is MUCH faster than 'git add .' because it avoids scanning massive ignored folders.
         cmds = [
-            ['git', 'add', '.'],
+            ['git', 'add', '-u'],
+            ['git', 'add', '*.py', 'WeddingFFapp_pyside/*.py', 'backend/*.py', 'frontend/*.py', 'infos/*.md', 'setup.iss'],
             ['git', 'commit', '-m', self.commit_msg],
             ['git', 'push', '-u', 'origin', 'main']
         ]

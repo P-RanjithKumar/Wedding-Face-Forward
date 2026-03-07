@@ -10,9 +10,11 @@ import subprocess
 import threading
 from pathlib import Path
 
-BASE_DIR = Path(__file__).parent.parent.resolve()
-BACKEND_DIR = BASE_DIR / "backend"
-FRONTEND_DIR = BASE_DIR / "frontend"
+import dist_utils
+
+BASE_DIR = dist_utils.get_project_root()
+BACKEND_DIR = dist_utils.get_backend_dir()
+FRONTEND_DIR = dist_utils.get_frontend_dir()
 
 
 class ProcessManager:
@@ -39,9 +41,11 @@ class ProcessManager:
         env["PYTHONUTF8"] = "1"
 
         try:
+            worker_cmd = [sys.executable, "--run-worker"] if getattr(sys, 'frozen', False) else \
+                [sys.executable, "-c", "import sys; sys.path.insert(0, 'backend'); from app.worker import main; main()"]
+                
             self.worker_proc = subprocess.Popen(
-                [sys.executable, "-c",
-                 "import sys; sys.path.insert(0, 'backend'); from app.worker import main; main()"],
+                worker_cmd,
                 cwd=str(BASE_DIR),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -49,6 +53,7 @@ class ProcessManager:
                 bufsize=1,
                 universal_newlines=True,
                 encoding='utf-8',
+                errors='replace',
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
             t = threading.Thread(
@@ -64,11 +69,14 @@ class ProcessManager:
             return
 
         try:
-            self.server_proc = subprocess.Popen(
+            server_cmd = [sys.executable, "--run-server"] if getattr(sys, 'frozen', False) else \
                 [sys.executable, "-c",
                  "import sys; sys.path.insert(0, 'backend'); sys.path.insert(0, 'frontend'); "
                  "from server import app; import uvicorn; "
-                 "uvicorn.run(app, host='0.0.0.0', port=8000, log_level='warning')"],
+                 "uvicorn.run(app, host='0.0.0.0', port=8000, log_level='warning')"]
+                 
+            self.server_proc = subprocess.Popen(
+                server_cmd,
                 cwd=str(BASE_DIR),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -76,6 +84,7 @@ class ProcessManager:
                 bufsize=1,
                 universal_newlines=True,
                 encoding='utf-8',
+                errors='replace',
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
             t = threading.Thread(
@@ -90,8 +99,11 @@ class ProcessManager:
                 self.on_output(f"Server start failed: {e}", "error")
 
         try:
+            whatsapp_cmd = [sys.executable, "--run-whatsapp"] if getattr(sys, 'frozen', False) else \
+                [sys.executable, "whatsapp_tool/db_whatsapp_sender.py"]
+                
             self.whatsapp_proc = subprocess.Popen(
-                [sys.executable, "whatsapp_tool/db_whatsapp_sender.py"],
+                whatsapp_cmd,
                 cwd=str(BASE_DIR),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -99,6 +111,7 @@ class ProcessManager:
                 bufsize=1,
                 universal_newlines=True,
                 encoding='utf-8',
+                errors='replace',
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
             t = threading.Thread(

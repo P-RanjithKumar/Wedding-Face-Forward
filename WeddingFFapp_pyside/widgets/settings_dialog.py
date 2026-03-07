@@ -37,6 +37,11 @@ from ..theme import c, COLORS
 
 def _find_env_path():
     """Locate the .env file — project root first, then backend."""
+    try:
+        import dist_utils
+        return dist_utils.get_env_file_path()
+    except ImportError:
+        pass
     base = Path(__file__).parent.parent.parent.resolve()
     env_path = base / ".env"
     if env_path.exists():
@@ -643,7 +648,10 @@ class SettingsDialog(QDialog):
         scroll_layout.setContentsMargins(0, 0, 8, 0)
         scroll_layout.setSpacing(8)
 
-        # Build sections
+        # Build GPU section first (special handling, not from SETTINGS_SCHEMA)
+        self._build_gpu_section(scroll_layout)
+
+        # Build regular sections
         for section in SETTINGS_SCHEMA:
             header = SectionHeader(section["section"], mode=self._mode)
             scroll_layout.addWidget(header)
@@ -820,3 +828,188 @@ class SettingsDialog(QDialog):
         self.setStyleSheet(f"QDialog {{ background: {bg}; }}")
         for row in self._setting_rows:
             row.set_mode(mode)
+
+    # ─────────────────────────────────────────────────────
+    # Hardware Acceleration (GPU) Section
+    # ─────────────────────────────────────────────────────
+
+    def _build_gpu_section(self, parent_layout):
+        """Build the ⚡ Hardware Acceleration section at the top of settings."""
+        header = SectionHeader("⚡  Hardware Acceleration", mode=self._mode)
+        parent_layout.addWidget(header)
+
+        # GPU status card
+        gpu_card = QFrame()
+        gpu_card.setObjectName("gpu_status_card")
+        gpu_card.setStyleSheet(
+            f"QFrame#gpu_status_card {{ "
+            f"  background-color: {c('bg_card', self._mode)}; "
+            f"  border: 1px solid {c('border', self._mode)}; "
+            f"  border-radius: 12px; "
+            f"}}"
+        )
+        card_layout = QVBoxLayout(gpu_card)
+        card_layout.setContentsMargins(16, 14, 16, 14)
+        card_layout.setSpacing(6)
+
+        # Try to get GPU info
+        try:
+            from app.gpu_manager import get_full_gpu_status
+            gpu_info = get_full_gpu_status()
+        except Exception:
+            gpu_info = None
+
+        if gpu_info and gpu_info.gpu_found:
+            # ── GPU Found ──
+            # GPU row
+            gpu_row = self._gpu_status_row(
+                "🖥️", "GPU",
+                f"{gpu_info.gpu_name} ({gpu_info.gpu_architecture}, {gpu_info.vram_mb} MB)",
+                c("text_primary", self._mode)
+            )
+            card_layout.addWidget(gpu_row)
+
+            # CUDA row
+            if gpu_info.cuda_version_ok:
+                cuda_row = self._gpu_status_row("✅", "CUDA", f"v{gpu_info.cuda_version}",
+                                               c("success", self._mode))
+            else:
+                cuda_text = gpu_info.cuda_version if gpu_info.cuda_version != "Not Installed" else "Not Installed"
+                cuda_row = self._gpu_status_row("🔴", "CUDA", cuda_text,
+                                               c("error", self._mode))
+            card_layout.addWidget(cuda_row)
+
+            # cuDNN row
+            if gpu_info.cudnn_found:
+                cudnn_row = self._gpu_status_row("✅", "cuDNN", f"v{gpu_info.cudnn_version}",
+                                                c("success", self._mode))
+            else:
+                cudnn_row = self._gpu_status_row("🔴", "cuDNN", "Not Found",
+                                                c("error", self._mode))
+            card_layout.addWidget(cudnn_row)
+
+            # Engine row
+            if gpu_info.cuda_provider_available:
+                engine_row = self._gpu_status_row(
+                    "⚡", "Engine",
+                    f"onnxruntime-gpu {gpu_info.ort_version} (CUDA)",
+                    c("success", self._mode)
+                )
+                status_text = "✅ GPU Acceleration ACTIVE"
+                status_color = c("success", self._mode)
+            else:
+                engine_row = self._gpu_status_row(
+                    "●", "Engine",
+                    f"onnxruntime {gpu_info.ort_version} (CPU)",
+                    c("text_secondary", self._mode)
+                )
+                status_text = "🟡 GPU setup incomplete"
+                status_color = c("warning", self._mode)
+            card_layout.addWidget(engine_row)
+
+            # Status line
+            status_label = QLabel(f"  Status:  {status_text}")
+            status_label.setStyleSheet(
+                f"color: {status_color}; font-size: 11px; "
+                f"font-weight: bold; background: transparent; padding-top: 4px;"
+            )
+            card_layout.addWidget(status_label)
+
+            # Action button
+            if gpu_info.cuda_provider_available:
+                btn_text = "⚡  GPU Active — Open Settings"
+            else:
+                btn_text = "⚡  Open GPU Setup Wizard"
+
+            gpu_btn = QPushButton(btn_text)
+            gpu_btn.setFixedHeight(34)
+            gpu_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            gpu_btn.setStyleSheet(
+                f"QPushButton {{ background: {c('accent', self._mode)}; "
+                f"color: white; border-radius: 12px; "
+                f"font-size: 12px; font-weight: bold; border: none; }}"
+                f"QPushButton:hover {{ background: #0066dd; }}"
+            )
+            gpu_btn.clicked.connect(self._open_gpu_wizard)
+            card_layout.addWidget(gpu_btn)
+
+        elif gpu_info and not gpu_info.is_whitelisted and gpu_info.gpu_name != "N/A":
+            # GPU found but not supported
+            info_label = QLabel(
+                f"🖥️  {gpu_info.gpu_name}\n"
+                f"⚠️  {gpu_info.whitelist_reason}\n\n"
+                f"Running in CPU mode."
+            )
+            info_label.setWordWrap(True)
+            info_label.setStyleSheet(
+                f"color: {c('text_secondary', self._mode)}; font-size: 11px; "
+                f"line-height: 1.5; background: transparent;"
+            )
+            card_layout.addWidget(info_label)
+
+        else:
+            # No GPU detected
+            info_label = QLabel(
+                "●  No compatible NVIDIA GPU detected\n"
+                "●  Engine: onnxruntime (CPU mode)\n\n"
+                "GPU acceleration requires an NVIDIA Turing or newer GPU\n"
+                "(RTX 2060+, GTX 1650+, RTX 3060+, RTX 4060+)."
+            )
+            info_label.setWordWrap(True)
+            info_label.setStyleSheet(
+                f"color: {c('text_secondary', self._mode)}; font-size: 11px; "
+                f"line-height: 1.5; background: transparent;"
+            )
+            card_layout.addWidget(info_label)
+
+        parent_layout.addWidget(gpu_card)
+
+        # Spacing after GPU section
+        spacer = QWidget()
+        spacer.setFixedHeight(4)
+        spacer.setStyleSheet("background: transparent;")
+        parent_layout.addWidget(spacer)
+
+    def _gpu_status_row(self, icon: str, label: str, value: str,
+                        value_color: str) -> QWidget:
+        """Create a single GPU status row widget."""
+        row = QWidget()
+        row.setStyleSheet("background: transparent;")
+        h = QHBoxLayout(row)
+        h.setContentsMargins(0, 1, 0, 1)
+        h.setSpacing(8)
+
+        icon_lbl = QLabel(icon)
+        icon_lbl.setFixedWidth(18)
+        icon_lbl.setStyleSheet("font-size: 12px; background: transparent;")
+        h.addWidget(icon_lbl)
+
+        name_lbl = QLabel(label)
+        name_lbl.setFixedWidth(50)
+        name_lbl.setStyleSheet(
+            f"color: {c('text_secondary', self._mode)}; font-size: 11px; "
+            f"font-weight: bold; background: transparent;"
+        )
+        h.addWidget(name_lbl)
+
+        val_lbl = QLabel(value)
+        val_lbl.setStyleSheet(
+            f"color: {value_color}; font-size: 11px; "
+            f"font-weight: bold; background: transparent;"
+        )
+        h.addWidget(val_lbl)
+        h.addStretch()
+
+        return row
+
+    def _open_gpu_wizard(self):
+        """Open the GPU setup wizard dialog."""
+        try:
+            from .gpu_wizard import GPUWizardDialog
+            wizard = GPUWizardDialog(mode=self._mode, parent=self)
+            wizard.exec()
+        except ImportError as e:
+            QMessageBox.warning(
+                self, "GPU Wizard",
+                f"Could not open GPU wizard: {e}"
+            )

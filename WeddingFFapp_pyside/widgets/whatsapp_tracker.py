@@ -25,8 +25,12 @@ class WhatsAppTrackerWidget(QFrame):
         self._mode = "light"
 
         # Path to the WhatsApp state file
-        base_dir = Path(__file__).parent.parent.parent.resolve()
-        self._state_file = base_dir / "whatsapp_tool" / "message_state_db.json"
+        try:
+            import dist_utils
+            self._state_file = dist_utils.get_user_data_dir() / "whatsapp_data" / "message_state_db.json"
+        except ImportError:
+            base_dir = Path(__file__).parent.parent.parent.resolve()
+            self._state_file = base_dir / "whatsapp_tool" / "whatsapp_data" / "message_state_db.json"
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 12, 14, 10)

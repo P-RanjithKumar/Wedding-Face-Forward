@@ -18,7 +18,11 @@ import uvicorn
 
 # Import backend modules
 import sys
-backend_path = Path(__file__).parent.parent / "backend"
+try:
+    import dist_utils
+    backend_path = dist_utils.get_backend_dir()
+except ImportError:
+    backend_path = Path(__file__).parent.parent / "backend"
 sys.path.insert(0, str(backend_path))
 
 from app.config import get_config
@@ -345,7 +349,10 @@ async def list_persons():
 # ============================================================
 # Static Files
 # ============================================================
-frontend_dir = Path(__file__).parent
+try:
+    frontend_dir = dist_utils.get_frontend_dir()
+except (NameError, AttributeError):
+    frontend_dir = Path(__file__).parent
 
 # Serve CSS files
 @app.get("/css/{filename}")

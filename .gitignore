@@ -1,43 +1,88 @@
-# Bytes and bytecode
+# --- Python ---
 __pycache__/
 *.py[cod]
+*$py.class
 *.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Environment Variables & Secrets
+# --- PyInstaller ---
+#  Usually these files are written by a python script, and contain the bin holder for a compiled soul
+*.manifest
+*.spec
+
+# --- Installer / Output ---
+Output/
+_internal/
+
+# --- Environment & Secrets ---
 .env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 credentials.json
 token.json
 client_secret.json
 service_account.json
 backend/service_account.json
-
-# Local planning & credentials backup (never commit)
 infos/MY_CREDENTIALS_BACKUP.txt
 infos/WINDOWS_APP_BUILD_PLAN.txt
 
-# Logs
+# --- Logs & Debug ---
 *.log
-logs.txt
 logs/
+logs.txt
 worker_crash.log
+run_error.log
 
-# Database
+# --- Database & Local Data ---
 *.db
+*.db-journal
 *.sqlite3
-data/
 *.db-shm
 *.db-wal
-
-# Application Data / Media (Generated content)
+data/
 EventRoot/
+whatsapp_data/
 whatsapp_user_data/
 whatsapp_tool/whatsapp_user_data/
 whatsapp_tool/message_state_db.json
 
-# IDE settings
+# --- IDEs ---
 .vscode/
 .idea/
+*.swp
+*.swo
+.history/
 
-# OS generated files
+# --- OS ---
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# --- Miscellaneous ---
+prompt.txt
+To_Do/

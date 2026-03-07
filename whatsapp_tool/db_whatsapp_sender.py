@@ -11,16 +11,26 @@ from playwright.async_api import async_playwright
 # --- Setup Paths ---
 # Add backend to sys.path to import app modules
 current_dir = Path(__file__).parent.resolve()
-backend_path = current_dir.parent / "backend"
+try:
+    sys.path.insert(0, str(current_dir.parent))  # For dist_utils
+    import dist_utils
+    backend_path = dist_utils.get_backend_dir()
+except ImportError:
+    backend_path = current_dir.parent / "backend"
 sys.path.insert(0, str(backend_path))
 
 from app.config import get_config
 from app.cloud import get_cloud, CloudManager
 
 # --- Configuration ---
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-STATE_FILE = os.path.join(SCRIPT_DIR, 'message_state_db.json')
-USER_DATA_DIR = os.path.join(SCRIPT_DIR, 'whatsapp_user_data')
+try:
+    wa_data_dir = dist_utils.get_user_data_dir() / "whatsapp_data"
+except NameError:
+    wa_data_dir = Path(os.path.dirname(os.path.abspath(__file__))) / "whatsapp_data"
+
+wa_data_dir.mkdir(parents=True, exist_ok=True)
+STATE_FILE = str(wa_data_dir / 'message_state_db.json')
+USER_DATA_DIR = str(wa_data_dir / 'profile')
 DEFAULT_MESSAGE_TEMPLATE = "Hello {name}! Here are your photos from the event: {link}\n\nEnjoy!"
 
 # --- Helper Functions ---
@@ -351,7 +361,11 @@ async def main():
             if "Executable doesn't exist" in str(e):
                 print("Browsers not found. Installing...")
                 import subprocess
-                subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"])
+                if getattr(sys, 'frozen', False):
+                    subprocess.run([sys.executable, "--playwright-install"])
+                else:
+                    subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"])
+                
                 browser = await p.chromium.launch_persistent_context(
                     user_data_dir=user_data_path,
                     headless=False,

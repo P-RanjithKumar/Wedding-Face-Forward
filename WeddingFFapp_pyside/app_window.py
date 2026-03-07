@@ -22,7 +22,8 @@ from PySide6.QtWidgets import (
     QMenuBar, QMenu
 )
 from PySide6.QtGui import QCursor, QIcon, QAction
-from PySide6.QtCore import Qt, QTimer, QThread, Signal, QObject
+from PySide6.QtCore import Qt, QTimer, QThread, Signal, QObject, QPropertyAnimation, QEasingCurve
+from PySide6.QtWidgets import QGraphicsOpacityEffect
 
 from .theme import COLORS, c, LIGHT_QSS, DARK_QSS
 from .worker_bridge import WorkerBridge
@@ -45,12 +46,12 @@ from .widgets.health_monitor import HealthMonitorDialog
 from .widgets.self_healing_dialog import SelfHealingDialog
 from .widgets.auth_dialog import AuthDialog
 
-# Backend imports
-BASE_DIR = Path(__file__).parent.parent.resolve()
-BACKEND_DIR = BASE_DIR / "backend"
-FRONTEND_DIR = BASE_DIR / "frontend"
-sys.path.insert(0, str(BACKEND_DIR))
-sys.path.insert(0, str(FRONTEND_DIR))
+# Backend imports — use dist_utils for path resolution
+import dist_utils
+BASE_DIR = dist_utils.get_project_root()
+BACKEND_DIR = dist_utils.get_backend_dir()
+FRONTEND_DIR = dist_utils.get_frontend_dir()
+# sys.path already set up by dist_utils.setup_sys_path() on import
 
 from app.config import get_config
 from app.db import get_db
@@ -133,7 +134,7 @@ class WeddingFFApp(QMainWindow):
         self.last_upload_stats = {}
 
         # Session log
-        logs_dir = BASE_DIR / "logs"
+        logs_dir = dist_utils.get_user_data_dir() / "logs"
         logs_dir.mkdir(exist_ok=True)
         session_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.session_log_path = logs_dir / f"session_{session_timestamp}.txt"
@@ -173,6 +174,9 @@ class WeddingFFApp(QMainWindow):
 
         # Initial fetch after 300 ms so the window is fully painted first
         QTimer.singleShot(300, self._trigger_stats_fetch)
+
+        # First-time GPU prompt (500ms after launch so window is visible)
+        QTimer.singleShot(500, self._check_first_time_gpu)
 
     def _on_worker_output(self, message, level):
         """Handle output from worker/server processes — called from background thread."""
@@ -220,6 +224,12 @@ class WeddingFFApp(QMainWindow):
         act_settings.triggered.connect(self._open_settings_dialog)
         menu_bar.addAction(act_settings)
 
+        # ── Erase Data ────────────────────────────────────────────────────────
+        act_erase = QAction("Erase Data", self)
+        act_erase.setStatusTip("Completely reset the database and delete all photos")
+        act_erase.triggered.connect(self._open_erase_data_confirmation)
+        menu_bar.addAction(act_erase)
+
         # ── Repair Database ───────────────────────────────────────────────────
         act_repair = QAction("Repair", self)
         act_repair.setStatusTip("Run self-healing database diagnostics and repair")
@@ -266,6 +276,25 @@ class WeddingFFApp(QMainWindow):
         header.addWidget(title)
 
         header.addStretch()
+
+        # GPU status toast (temporary, fades away after a few seconds)
+        self._gpu_toast = QLabel()
+        self._gpu_toast.setFixedHeight(24)
+        self._gpu_toast.setVisible(False)
+        self._gpu_toast_opacity = QGraphicsOpacityEffect(self._gpu_toast)
+        self._gpu_toast_opacity.setOpacity(1.0)
+        self._gpu_toast.setGraphicsEffect(self._gpu_toast_opacity)
+        header.addWidget(self._gpu_toast)
+
+        # GPU mode badge (permanent tiny pill)
+        self._gpu_badge = QLabel()
+        self._gpu_badge.setFixedHeight(24)
+        self._gpu_badge.setStyleSheet(
+            "font-size: 11px; font-weight: bold; padding: 2px 10px; "
+            "border-radius: 12px; background: #f0f0f5; color: #86868b;"
+        )
+        self._update_gpu_badge()
+        header.addWidget(self._gpu_badge)
 
         # System health indicator
         self.health_indicator = SystemHealthIndicator()
@@ -665,6 +694,76 @@ class WeddingFFApp(QMainWindow):
         dialog.repair_completed.connect(self._on_repair_completed)
         dialog.exec()
 
+    def _open_erase_data_confirmation(self):
+        """Prompt to erase all data and reset the system."""
+        from PySide6.QtWidgets import QMessageBox
+        reply = QMessageBox.warning(
+            self,
+            "⚠️ COMPREHENSIVE SYSTEM RESET ⚠️",
+            "This will PERMANENTLY delete:\n\n"
+            "1. All photos (Incoming, Processed, People/Folders)\n"
+            "2. All guest records, face fingerprints, and match data\n"
+            "3. All cloud upload history\n"
+            "4. All log files\n\n"
+            "Are you ABSOLUTELY sure you want to proceed?\n"
+            "This action cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self._execute_erase_data()
+
+    def _execute_erase_data(self):
+        """Execute the thorough data erasure and alert the user when done."""
+        # Stop background UI refresh to release any SQLite locks
+        self._refresh_timer.stop()
+        
+        self.activity_log.add_log("Stopping workers and erasing system data...", "warning")
+        self._log_to_session("[APP] Admin initiated complete system reset")
+
+        # Properly close the session log handle so it can be deleted
+        if self.session_log_file:
+            try:
+                self.session_log_file.close()
+            except Exception:
+                pass
+            self.session_log_file = None
+
+        if self.process_manager.is_running():
+            self._stop_system()
+
+        def _do_erase():
+            # Wait until the process manager confirms all background workers are dead
+            while self.process_manager.is_running():
+                time.sleep(0.5)
+            
+            # Tell the StatsWorker thread to exit to help garbage collect its connections
+            self._stats_thread.quit()
+            self._stats_thread.wait(1000)
+            
+            # Close the main thread's DB connection globally
+            try:
+                from app.db import get_db
+                get_db().close()
+            except Exception:
+                pass
+
+            # Additional small grace period for file handle releases
+            time.sleep(1)
+            
+            try:
+                # Import dynamically to ensure cleanly segregated execution
+                import erase_all_data
+                erase_all_data.main(auto_confirm=True)
+                
+                # Use signal to avoid cross-thread UI updates
+                self.bridge.log_received.emit("System reset complete. Please restart the app for a fresh start.", "success")
+            except Exception as e:
+                self.bridge.log_received.emit(f"Error erasing data: {e}", "error")
+
+        import threading
+        threading.Thread(target=_do_erase, daemon=True).start()
+
     def _open_auth_dialog(self):
         """Open the Google Drive Auth Manager dialog."""
         dialog = AuthDialog(mode=self._mode, parent=self)
@@ -745,6 +844,168 @@ class WeddingFFApp(QMainWindow):
         self.status_indicator.set_mode(self._mode)
         self.health_indicator.set_mode(self._mode)
         self.people_list.set_mode(self._mode)
+        self._update_gpu_badge()
+
+    # =====================================================================
+    # GPU Integration
+    # =====================================================================
+    def _update_gpu_badge(self):
+        """Update the GPU mode badge in the header."""
+        try:
+            from app.gpu_manager import get_execution_config
+            exec_cfg = get_execution_config(
+                gpu_enabled=self.config.gpu_acceleration,
+                gpu_device_id=self.config.gpu_device_id,
+            )
+            if "CUDAExecutionProvider" in exec_cfg.providers:
+                self._gpu_badge.setText("⚡ GPU")
+                if self._mode == "dark":
+                    self._gpu_badge.setStyleSheet(
+                        "font-size: 11px; font-weight: bold; padding: 2px 10px; "
+                        "border-radius: 12px; background: #0d3d30; color: #30d158;"
+                    )
+                else:
+                    self._gpu_badge.setStyleSheet(
+                        "font-size: 11px; font-weight: bold; padding: 2px 10px; "
+                        "border-radius: 12px; background: #ecfdf5; color: #059669;"
+                    )
+            else:
+                self._gpu_badge.setText("● CPU")
+                if self._mode == "dark":
+                    self._gpu_badge.setStyleSheet(
+                        "font-size: 11px; font-weight: bold; padding: 2px 10px; "
+                        "border-radius: 12px; background: #2c2c2e; color: #98989d;"
+                    )
+                else:
+                    self._gpu_badge.setStyleSheet(
+                        "font-size: 11px; font-weight: bold; padding: 2px 10px; "
+                        "border-radius: 12px; background: #f0f0f5; color: #86868b;"
+                    )
+        except Exception:
+            self._gpu_badge.setText("● CPU")
+
+    def _show_gpu_toast(self, text: str, color_type: str = "blue"):
+        """Show a temporary GPU status toast in the header that fades after 5 seconds.
+        color_type: 'blue' (CPU/no GPU), 'green' (GPU active), 'amber' (GPU but needs setup)
+        """
+        if color_type == "green":
+            if self._mode == "dark":
+                style = ("font-size: 11px; font-weight: bold; padding: 2px 12px; "
+                         "border-radius: 12px; background: #0d3d30; color: #30d158;")
+            else:
+                style = ("font-size: 11px; font-weight: bold; padding: 2px 12px; "
+                         "border-radius: 12px; background: #ecfdf5; color: #059669;")
+        elif color_type == "amber":
+            if self._mode == "dark":
+                style = ("font-size: 11px; font-weight: bold; padding: 2px 12px; "
+                         "border-radius: 12px; background: #3d2e0d; color: #f5a623;")
+            else:
+                style = ("font-size: 11px; font-weight: bold; padding: 2px 12px; "
+                         "border-radius: 12px; background: #fef9ec; color: #b45309;")
+        else:  # blue
+            if self._mode == "dark":
+                style = ("font-size: 11px; font-weight: bold; padding: 2px 12px; "
+                         "border-radius: 12px; background: #0d2d3d; color: #4da6ff;")
+            else:
+                style = ("font-size: 11px; font-weight: bold; padding: 2px 12px; "
+                         "border-radius: 12px; background: #eff6ff; color: #2563eb;")
+
+        self._gpu_toast.setText(text)
+        self._gpu_toast.setStyleSheet(style)
+        self._gpu_toast_opacity.setOpacity(1.0)
+        self._gpu_toast.setVisible(True)
+
+        # Start fade-out after 5 seconds
+        QTimer.singleShot(5000, self._fade_gpu_toast)
+
+    def _fade_gpu_toast(self):
+        """Smoothly fade out the GPU toast over 1.5 seconds then hide it."""
+        self._gpu_toast_anim = QPropertyAnimation(self._gpu_toast_opacity, b"opacity")
+        self._gpu_toast_anim.setDuration(1500)
+        self._gpu_toast_anim.setStartValue(1.0)
+        self._gpu_toast_anim.setEndValue(0.0)
+        self._gpu_toast_anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        self._gpu_toast_anim.finished.connect(lambda: self._gpu_toast.setVisible(False))
+        self._gpu_toast_anim.start()
+
+    def _check_first_time_gpu(self):
+        """On first launch, show GPU toast and optionally offer GPU setup."""
+        try:
+            from app.gpu_manager import get_full_gpu_status
+            gpu_info = get_full_gpu_status()
+
+            # ── Already running on GPU ──
+            if self.config.gpu_acceleration and gpu_info.cuda_provider_available:
+                self._show_gpu_toast(
+                    f"⚡ GPU found · using {gpu_info.gpu_name}", "green"
+                )
+                self.activity_log.add_log(
+                    f"⚡ GPU acceleration active — {gpu_info.gpu_name}", "success"
+                )
+                return
+
+            # ── GPU found & whitelisted but not fully set up — show wizard popup ──
+            if gpu_info.gpu_found and gpu_info.is_whitelisted:
+                self._show_gpu_toast(
+                    f"🖥️ {gpu_info.gpu_name} detected · setup needed", "amber"
+                )
+                self.activity_log.add_log(
+                    f"GPU detected: {gpu_info.gpu_name} ({gpu_info.gpu_architecture}) — not yet enabled", "info"
+                )
+
+                # Show first-time prompt (unless dismissed or already started wizard)
+                if (not self.config.gpu_prompt_dismissed
+                        and self.config.gpu_wizard_step in ("not_started",)):
+                    from .widgets.gpu_wizard import GPUDiscoveryPrompt
+                    prompt = GPUDiscoveryPrompt(
+                        gpu_info, mode=self._mode, parent=self
+                    )
+                    prompt.setup_requested.connect(self._open_gpu_wizard)
+                    prompt.exec()
+                return
+
+            # ── GPU found but unsupported ──
+            if gpu_info.gpu_found and not gpu_info.is_whitelisted:
+                self._show_gpu_toast("No compatible GPU · using CPU", "blue")
+                self.activity_log.add_log(
+                    f"● GPU found ({gpu_info.gpu_name}) but not supported — running in CPU mode", "info"
+                )
+                return
+
+            # ── No GPU at all ──
+            self._show_gpu_toast("No GPU found · using CPU", "blue")
+            self.activity_log.add_log(
+                "● No GPU detected — running in CPU mode", "info"
+            )
+
+        except Exception:
+            self._show_gpu_toast("No GPU found · using CPU", "blue")
+            self.activity_log.add_log(
+                "● Running in CPU mode", "info"
+            )
+
+    def _open_gpu_wizard(self):
+        """Open the GPU setup wizard dialog."""
+        try:
+            from .widgets.gpu_wizard import GPUWizardDialog
+            wizard = GPUWizardDialog(mode=self._mode, parent=self)
+            wizard.gpu_enabled.connect(self._on_gpu_state_changed)
+            wizard.gpu_disabled.connect(self._on_gpu_state_changed)
+            wizard.exec()
+        except ImportError as e:
+            self.activity_log.add_log(f"Failed to open GPU wizard: {e}", "error")
+
+    def _on_gpu_state_changed(self):
+        """Handle GPU enable/disable — reload config and update badge."""
+        from app.config import reset_config
+        reset_config()
+        self.config = get_config()
+        self._update_gpu_badge()
+        mode_str = "GPU" if self.config.gpu_acceleration else "CPU"
+        self.activity_log.add_log(
+            f"Hardware acceleration mode changed to {mode_str}. Restart required.", "success"
+        )
+        self._log_to_session(f"[APP] GPU state changed: {mode_str}")
 
     def _open_session_log(self):
         """Open the current session log file in the default text editor."""

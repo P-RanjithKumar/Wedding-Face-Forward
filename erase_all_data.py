@@ -18,6 +18,10 @@ import io
 import time
 from pathlib import Path
 
+# Add project root to path for direct execution
+import dist_utils
+from app.config import get_config
+
 # Fix Windows console encoding for emojis
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -80,7 +84,10 @@ def clear_sqlite_db(db_path):
         for ext in ['-wal', '-shm', '-journal']:
             tmp_file = Path(str(db_path) + ext)
             if tmp_file.exists():
-                tmp_file.unlink()
+                try:
+                    tmp_file.unlink()
+                except Exception:
+                    pass # Ignore if remaining file handles lock it
                 
         return True
     except Exception as e:
@@ -106,42 +113,44 @@ def main(auto_confirm=False):
     print("\n🚀 Starting deep cleanup...")
     time.sleep(1)
 
+    cfg = get_config()
+
     # 1. Clear Photo Directories
     print("\n📂 Cleaning photo folders...")
-    photo_dirs = [
-        "EventRoot/Incoming",
-        "EventRoot/Processed",
-        "EventRoot/People",
-        "EventRoot/Admin",
-        "backend/EventRoot/Incoming",
-        "backend/EventRoot/Processed",
-        "backend/EventRoot/People",
-        "backend/EventRoot/Admin"
-    ]
-    for d in photo_dirs:
-        count = clear_directory_contents(d)
-        if count > 0 or Path(d).exists():
-            print(f"  ✅ Cleared {count} items from {d}")
+    event_root = cfg.event_root
+    if event_root and event_root.exists():
+        photo_dirs = [
+            event_root / "Incoming",
+            event_root / "Processed",
+            event_root / "People",
+            event_root / "Admin"
+        ]
+        for d in photo_dirs:
+            count = clear_directory_contents(d)
+            if count > 0 or Path(d).exists():
+                print(f"  ✅ Cleared {count} items from {d.name}")
 
-    # 2. Clear Databases
-    print("\n🗄️  Resetting databases...")
-    dbs = ["data/wedding.db", "backend/data/wedding.db"]
-    for db in dbs:
-        if clear_sqlite_db(db):
-            print(f"  ✅ Reset and vacuumed: {db}")
+    # 2. Clear Database
+    print("\n🗄️  Resetting database...")
+    db_path = dist_utils.get_db_path()
+    if clear_sqlite_db(db_path):
+        print(f"  ✅ Reset and vacuumed database")
 
     # 3. Clear Logs
     print("\n📝 Clearing application logs...")
-    log_count = clear_directory_contents("logs")
+    log_count = clear_directory_contents(dist_utils.get_logs_dir())
     print(f"  ✅ Deleted {log_count} log files")
 
     # 4. Reset WhatsApp state (but keep session)
     print("\n📱 Resetting WhatsApp queue...")
-    wa_state = Path("whatsapp_tool/message_state_db.json")
+    wa_state = dist_utils.get_whatsapp_dir() / "message_state_db.json"
     if wa_state.exists():
-        with open(wa_state, 'w') as f:
-            f.write("{}")
-        print(f"  ✅ Cleared: {wa_state}")
+        try:
+            with open(wa_state, 'w') as f:
+                f.write("{}")
+            print("  ✅ Cleared WhatsApp state")
+        except Exception as e:
+            print(f"  ❌ Error clearing WhatsApp state: {e}")
 
     print("\n" + "=" * 60)
     print("✨ SYSTEM RESET COMPLETE! ✨".center(60))

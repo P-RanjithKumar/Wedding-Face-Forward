@@ -639,7 +639,11 @@ def get_auth_status() -> dict:
             expiry_str   (str):  Human-readable expiry datetime string.
     """
     # Mirrors the search paths used by CloudManager.initialize()
-    base = Path(__file__).parent.parent.parent.resolve()
+    try:
+        import dist_utils
+        base = dist_utils.get_user_data_dir()
+    except ImportError:
+        base = Path(__file__).parent.parent.parent.resolve()
     possible_paths = [
         base / "token.json",
         base / "backend" / "token.json",

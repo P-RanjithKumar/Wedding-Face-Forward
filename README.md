@@ -30,6 +30,7 @@
 ### 🧠 Advanced AI & Image Processing
 
 * **Zero-Training Clustering**: Automatically groups faces into "Person" clusters using the **Buffalo_L** model (InsightFace). No pre-collected guest list required.
+* **⚡ Automatic GPU Acceleration**: Dynamically detects NVIDIA GPUs (Turing to Blackwell), offering a zero-friction UI wizard to download CUDA/cuDNN and install `onnxruntime-gpu` for a massive processing speedup, with seamless CPU fallback.
 * **Pro RAW Engine**: Integrated support for professional formats (`.CR2`, `.NEF`, `.ARW`) using `rawpy`, converting them to high-quality normalized JPEGs.
 * **Selfie-Matching**: Guests "claim" their entire gallery just by uploading one selfie. The system matches the selfie embedding to the existing event clusters with high confidence thresholds.
 
@@ -50,14 +51,16 @@
 
 ### The AI Engine
 
-The system uses **InsightFace's Buffalo_L** model powered by **ONNX Runtime** for high-efficiency CPU execution.
+The system uses **InsightFace's Buffalo_L** model powered by **ONNX Runtime**. It dynamically scales from standard CPU execution to high-performance GPU execution (via `CUDAExecutionProvider`) when a compatible NVIDIA GPU is detected and enabled.
+
 * **Detection**: Sub-100ms face detection per frame using RetinaFace.
 * **Embeddings**: 512-dimensional feature vector extraction.
 * **Clustering**: Incremental Centroid-based clustering. Each new face is compared using **Cosine Distance** to existing centroids. If a match is found, the centroid is updated via a running average; otherwise, a new cluster is spawned.
 
 ### Reliability Layer
 
-- **SQLite with WAL Mode**: Uses Write-Ahead Logging to support heavy concurrent reads/writes from the processing worker, web server, and WhatsApp sender.
+* **SQLite with WAL Mode**: Uses Write-Ahead Logging to support heavy concurrent reads/writes from the processing worker, web server, and WhatsApp sender.
+
 * **Atomic Operations**: Photos are moved/copied only after database records are safely committed.
 * **Resumability**: A global `file_hash` prevents redundant processing of the same image across sessions.
 
@@ -162,6 +165,12 @@ GOOGLE_CREDENTIALS_FILE=credentials.json
 DRIVE_ROOT_FOLDER_ID=your_id_here
 UPLOAD_QUEUE_ENABLED=true
 
+# GPU Acceleration Settings
+GPU_ACCELERATION=false
+GPU_DEVICE_ID=0
+GPU_WIZARD_STEP=not_started
+GPU_PROMPT_DISMISSED=false
+
 # Interface
 LOG_LEVEL=INFO
 ```
@@ -202,7 +211,7 @@ For developers, `python git_automator.py` provides a GUI for quick Git staging, 
 ## 🛡️ Privacy & Performance
 
 * **Security**: Biometric data (embeddings) is stored in a local SQLite DB, never sent to external servers. Only processed JPEGs are uploaded to your private Google Drive.
-* **Efficiency**: The system is tuned for multi-core CPUs. A standard modern laptop can process roughly 1000 photos an hour.
+* **Multi-Tier Performance**: The system is heavily multi-threaded for CPUs, but shines when an **NVIDIA RTX** GPU is available. A modern laptop on GPU can process thousands of photos with sub-second latency per image.
 
 ---
 
@@ -215,5 +224,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## 👤 Author
 
 **P-Ranjith Kumar**
+
 * GitHub: [@P-RanjithKumar](https://github.com/P-RanjithKumar)
 * Project: [Wedding Face Forward](https://github.com/P-RanjithKumar/Wedding-Face-Forward)

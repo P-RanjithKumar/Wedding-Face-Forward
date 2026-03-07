@@ -41,9 +41,13 @@ except ImportError:
     HAS_GPUTIL = False
 
 # ── Backend DB ────────────────────────────────────────────
-BASE_DIR = Path(__file__).parent.parent.parent.resolve()
-BACKEND_DIR = BASE_DIR / "backend"
-sys.path.insert(0, str(BACKEND_DIR))
+try:
+    import dist_utils
+    BACKEND_DIR = dist_utils.get_backend_dir()
+except ImportError:
+    BASE_DIR = Path(__file__).parent.parent.parent.resolve()
+    BACKEND_DIR = BASE_DIR / "backend"
+    sys.path.insert(0, str(BACKEND_DIR))
 
 try:
     from app.db import get_db

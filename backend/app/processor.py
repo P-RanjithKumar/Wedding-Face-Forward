@@ -37,16 +37,29 @@ def _get_face_analyzer():
     if analyzer is None:
         try:
             from insightface.app import FaceAnalysis
+            from .gpu_manager import get_execution_config
+            
+            config = get_config()
+            exec_config = get_execution_config(
+                gpu_enabled=config.gpu_acceleration,
+                gpu_device_id=config.gpu_device_id,
+            )
             
             thread_name = threading.current_thread().name
-            logger.info(f"Loading InsightFace model (buffalo_l) for thread {thread_name}...")
+            logger.info(
+                f"Loading InsightFace model (buffalo_l) for thread {thread_name} "
+                f"— mode: {exec_config.mode}"
+            )
             analyzer = FaceAnalysis(
                 name="buffalo_l",
-                providers=["CPUExecutionProvider"]
+                providers=exec_config.providers
             )
-            analyzer.prepare(ctx_id=-1, det_size=(640, 640))
+            analyzer.prepare(ctx_id=exec_config.ctx_id, det_size=(640, 640))
             _thread_local.face_analyzer = analyzer
-            logger.info(f"InsightFace model loaded successfully for thread {thread_name}")
+            logger.info(
+                f"InsightFace model loaded successfully for thread {thread_name} "
+                f"[{exec_config.mode}]"
+            )
         except ImportError as e:
             logger.error(f"InsightFace not installed: {e}")
             raise RuntimeError("Please install insightface: pip install insightface onnxruntime")

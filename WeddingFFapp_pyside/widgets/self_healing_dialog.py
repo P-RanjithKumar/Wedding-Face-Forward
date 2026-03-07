@@ -447,8 +447,12 @@ class SelfHealingDialog(QDialog):
     def _diagnostics_worker(self):
         """Background worker that runs all diagnostic checks."""
         import sys
-        base_dir = Path(__file__).parent.parent.parent.resolve()
-        backend_dir = base_dir / "backend"
+        try:
+            import dist_utils
+            backend_dir = dist_utils.get_backend_dir()
+        except ImportError:
+            base_dir = Path(__file__).parent.parent.parent.resolve()
+            backend_dir = base_dir / "backend"
         sys.path.insert(0, str(backend_dir))
 
         from app.db import get_db
@@ -645,8 +649,12 @@ class SelfHealingDialog(QDialog):
     def _repair_worker(self, issue_key: str):
         """Execute a specific repair action in background."""
         import sys
-        base_dir = Path(__file__).parent.parent.parent.resolve()
-        backend_dir = base_dir / "backend"
+        try:
+            import dist_utils
+            backend_dir = dist_utils.get_backend_dir()
+        except ImportError:
+            base_dir = Path(__file__).parent.parent.parent.resolve()
+            backend_dir = base_dir / "backend"
         sys.path.insert(0, str(backend_dir))
 
         from app.db import get_db
@@ -819,8 +827,12 @@ class SelfHealingDialog(QDialog):
     def _repair_worker_sync(self, issue_key: str):
         """Synchronous repair for use in fix_all sequence."""
         import sys
-        base_dir = Path(__file__).parent.parent.parent.resolve()
-        backend_dir = base_dir / "backend"
+        try:
+            import dist_utils
+            backend_dir = dist_utils.get_backend_dir()
+        except ImportError:
+            base_dir = Path(__file__).parent.parent.parent.resolve()
+            backend_dir = base_dir / "backend"
         sys.path.insert(0, str(backend_dir))
 
         from app.db import get_db

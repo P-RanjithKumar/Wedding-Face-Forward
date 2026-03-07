@@ -10,13 +10,20 @@ from dataclasses import dataclass
 from typing import Tuple
 from dotenv import load_dotenv
 
-# Load .env file
-# Try project root first, then backend folder
-BASE_DIR = Path(__file__).parent.parent.parent
-BACKEND_DIR = Path(__file__).parent.parent
+# Load .env file — uses dist_utils for correct path in both dev and frozen modes
+try:
+    import dist_utils
+    BASE_DIR = dist_utils.get_project_root()
+    BACKEND_DIR = dist_utils.get_backend_dir()
+    _env_path = dist_utils.get_env_file_path()
+except ImportError:
+    # Fallback when dist_utils is not on sys.path (e.g. standalone backend tests)
+    BASE_DIR = Path(__file__).parent.parent.parent
+    BACKEND_DIR = Path(__file__).parent.parent
+    _env_path = BASE_DIR / ".env"
 
-if (BASE_DIR / ".env").exists():
-    load_dotenv(BASE_DIR / ".env")
+if _env_path.exists():
+    load_dotenv(_env_path)
 elif (BACKEND_DIR / ".env").exists():
     load_dotenv(BACKEND_DIR / ".env")
 else:
@@ -60,23 +67,38 @@ class Config:
     upload_workers: int  # Number of parallel upload threads
     folder_sync_interval: int  # Seconds between folder structure sync checks
     
+    # Hardware Acceleration (GPU)
+    gpu_acceleration: bool
+    gpu_device_id: int
+    gpu_wizard_step: str        # not_started, dismissed, cuda_pending, cudnn_pending, ort_pending, complete
+    gpu_prompt_dismissed: bool
+    
     @classmethod
     def from_env(cls) -> "Config":
         """Create configuration from environment variables."""
         # Get base paths
-        event_root = Path(os.getenv("EVENT_ROOT", "./EventRoot")).resolve()
-        db_path = Path(os.getenv("DB_PATH", "./data/wedding.db")).resolve()
+        import dist_utils
+        user_dir = dist_utils.get_user_data_dir()
+        
+        event_path_str = os.getenv("EVENT_ROOT", "./EventRoot")
+        db_path_str = os.getenv("DB_PATH", "./data/wedding.db")
+        
+        # If paths are relative (start with ./ or just a name), resolve them relative to user AppData
+        event_root = Path(event_path_str) if Path(event_path_str).is_absolute() else (user_dir / event_path_str).resolve()
+        db_path = Path(db_path_str) if Path(db_path_str).is_absolute() else (user_dir / db_path_str).resolve()
         
         # Parse extensions
         ext_str = os.getenv("SUPPORTED_EXTENSIONS", ".jpg,.jpeg,.png,.webp,.avif,.heic,.heif,.bmp,.tiff,.tif,.gif,.cr2,.nef,.arw,.dng,.orf,.rw2,.raf,.pef")
         extensions = tuple(ext.strip().lower() for ext in ext_str.split(","))
         
-        # Resolve credentials file path
         creds_file = os.getenv("GOOGLE_CREDENTIALS_FILE", "service_account.json")
         creds_path = Path(creds_file)
         if not creds_path.is_absolute():
-            # Try current working directory
-            if not creds_path.exists():
+            # First try the user data dir (where bootstrap places it)
+            user_creds = user_dir / creds_file
+            if user_creds.exists():
+                creds_path = user_creds
+            elif not creds_path.exists():
                 # Try backend directory
                 backend_creds = BACKEND_DIR / creds_file
                 if backend_creds.exists():
@@ -104,6 +126,11 @@ class Config:
             upload_queue_enabled=os.getenv("UPLOAD_QUEUE_ENABLED", "true").lower() == "true",
             upload_workers=int(os.getenv("UPLOAD_WORKERS", "4")),
             folder_sync_interval=int(os.getenv("FOLDER_SYNC_INTERVAL", "10")),
+            # GPU
+            gpu_acceleration=os.getenv("GPU_ACCELERATION", "false").lower() == "true",
+            gpu_device_id=int(os.getenv("GPU_DEVICE_ID", "0")),
+            gpu_wizard_step=os.getenv("GPU_WIZARD_STEP", "not_started"),
+            gpu_prompt_dismissed=os.getenv("GPU_PROMPT_DISMISSED", "false").lower() == "true",
         )
     
     def ensure_directories(self) -> None:

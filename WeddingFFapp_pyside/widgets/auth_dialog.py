@@ -24,7 +24,11 @@ from ..theme import c
 
 
 # ─── Token search paths (mirrors cloud.py logic) ─────────────────────────────
-BASE_DIR = Path(__file__).parent.parent.parent.resolve()
+try:
+    import dist_utils
+    BASE_DIR = dist_utils.get_user_data_dir()
+except ImportError:
+    BASE_DIR = Path(__file__).parent.parent.parent.resolve()
 
 TOKEN_SEARCH_PATHS = [
     BASE_DIR / "token.json",
