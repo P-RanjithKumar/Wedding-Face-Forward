@@ -81,6 +81,7 @@ hidden_imports = [
     'WeddingFFapp_pyside.widgets.auth_dialog',
     'WeddingFFapp_pyside.widgets.gpu_wizard',
     'WeddingFFapp_pyside.widgets.whatsapp_tracker',
+    'WeddingFFapp_pyside.splash_screen',
 
     # whatsapp_tool
     'whatsapp_tool.db_whatsapp_sender',
@@ -211,6 +212,8 @@ hidden_imports = [
     'PySide6.QtCore',
     'PySide6.QtWidgets',
     'PySide6.QtGui',
+    'PySide6.QtMultimedia',
+    'PySide6.QtMultimediaWidgets',
 
     # ── Monitoring (optional but installed) ──────────────
     'psutil',
@@ -266,6 +269,9 @@ datas = [
 
     # Assets (app icon)
     (os.path.join(ASSETS_DIR, 'logo.png'), os.path.join('WeddingFFapp_pyside', 'assets')),
+
+    # Intro video (splash screen animation)
+    (os.path.join(PROJECT_ROOT, 'logo'), 'logo'),
 
     # .env template (will be copied to AppData on first launch)
     (os.path.join(PROJECT_ROOT, '.env'), '.'),
@@ -369,8 +375,8 @@ excludes = [
     'PySide6.QtCharts',
     'PySide6.QtDataVisualization',
     'PySide6.QtDesigner',
-    'PySide6.QtMultimedia',
-    'PySide6.QtMultimediaWidgets',
+    # 'PySide6.QtMultimedia',        # NEEDED for intro video splash screen
+    # 'PySide6.QtMultimediaWidgets',  # NEEDED for intro video splash screen
     'PySide6.QtNetworkAuth',
     'PySide6.QtNfc',
     'PySide6.QtPositioning',

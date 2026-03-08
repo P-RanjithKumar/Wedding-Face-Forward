@@ -45,6 +45,7 @@ from .widgets.settings_dialog import SettingsDialog
 from .widgets.health_monitor import HealthMonitorDialog
 from .widgets.self_healing_dialog import SelfHealingDialog
 from .widgets.auth_dialog import AuthDialog
+from .splash_screen import PremiumSplashScreen
 
 # Backend imports — use dist_utils for path resolution
 import dist_utils
@@ -178,6 +179,18 @@ class WeddingFFApp(QMainWindow):
 
         # First-time GPU prompt (500ms after launch so window is visible)
         QTimer.singleShot(500, self._check_first_time_gpu)
+
+        # Create overlay splash screen — parented to QMainWindow itself
+        # so it covers the ENTIRE window (including menu bar).
+        self.splash_overlay = PremiumSplashScreen(self)
+        self.splash_overlay.setGeometry(0, 0, self.width(), self.height())
+        self.splash_overlay.raise_()
+        self.splash_overlay.show()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, 'splash_overlay') and self.splash_overlay.isVisible():
+            self.splash_overlay.setGeometry(0, 0, self.width(), self.height())
 
     def _on_worker_output(self, message, level):
         """Handle output from worker/server processes — called from background thread."""
