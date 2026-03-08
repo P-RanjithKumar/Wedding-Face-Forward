@@ -1,5 +1,5 @@
 """
-Wedding FaceForward — PySide6 Desktop Admin Dashboard
+AURA — PySide6 Desktop Admin Dashboard (by DARK intelligence)
 Entry point: creates QApplication, applies theme, and runs the main window.
 """
 
@@ -10,15 +10,15 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QFont
 
 from .theme import LIGHT_QSS
-from .app_window import WeddingFFApp
+from .app_window import AuraApp
 
 
 def run():
-    """Launch the Wedding FaceForward admin dashboard."""
+    """Launch the AURA admin dashboard."""
     multiprocessing.freeze_support()
 
     import ctypes
-    myappid = u'wedding_faceforward.admin.1.0'  # unique string
+    myappid = u'dark_intelligence.aura.admin.1.0'  # unique string
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     app = QApplication(sys.argv)
@@ -30,7 +30,7 @@ def run():
     app.setStyleSheet(LIGHT_QSS)
 
     # Create and show main window
-    window = WeddingFFApp()
+    window = AuraApp()
     window.show()
 
     sys.exit(app.exec())

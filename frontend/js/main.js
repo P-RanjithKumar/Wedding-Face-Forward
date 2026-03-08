@@ -1,5 +1,5 @@
 /**
- * Wedding Face Forward - Frontend Application
+ * AURA - Frontend Application (by DARK intelligence)
  * Handles enrollment flow, gallery display, and API interactions
  */
 

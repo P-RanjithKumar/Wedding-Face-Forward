@@ -456,7 +456,7 @@ class ClusterMergeDialog(QDialog):
         super().__init__(parent)
         self._mode = mode
 
-        self.setWindowTitle("Cluster Merge — Wedding FaceForward")
+        self.setWindowTitle("Cluster Merge — AURA")
         self.setMinimumSize(750, 620)
         self.resize(820, 680)
         self.setModal(True)

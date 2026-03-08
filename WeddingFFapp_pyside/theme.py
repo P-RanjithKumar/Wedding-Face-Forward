@@ -1,5 +1,5 @@
 """
-Color Theme & QSS Stylesheets for the Wedding Face Forward Dashboard.
+Color Theme & QSS Stylesheets for the AURA Dashboard (by DARK intelligence).
 Ported from the CustomTkinter COLORS dict — light/dark mode support.
 """
 

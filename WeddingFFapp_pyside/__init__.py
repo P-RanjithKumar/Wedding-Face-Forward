@@ -1,4 +1,4 @@
 """
 WeddingFFapp_pyside - PySide6 Admin Dashboard
-Wedding Face Forward Photo Processing System
+AURA Photo Processing System (by DARK intelligence)
 """

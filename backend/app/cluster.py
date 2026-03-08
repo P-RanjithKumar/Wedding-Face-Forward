@@ -1,5 +1,5 @@
 """
-Clustering module for Wedding Face Forward Phase 2 Backend.
+Clustering module for AURA Phase 2 Backend (by DARK intelligence).
 
 Implements incremental centroid-based clustering for face embeddings.
 Assigns new faces to existing person clusters or creates new clusters.

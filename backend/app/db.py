@@ -1,5 +1,5 @@
 """
-Database module for Wedding Face Forward Phase 2 Backend.
+Database module for AURA Phase 2 Backend (by DARK intelligence).
 
 SQLite schema and queries for tracking photos, faces, and person clusters.
 """

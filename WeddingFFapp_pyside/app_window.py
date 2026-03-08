@@ -1,5 +1,5 @@
 """
-WeddingFFApp — Main application window (QMainWindow).
+AuraApp — Main application window (QMainWindow).
 Ported from CustomTkinter WeddingFFApp(ctk.CTk) class.
 
 Layout zones:
@@ -111,13 +111,13 @@ class StatsWorker(QObject):
             pass  # Silent fail — non-critical background fetch
 
 
-class WeddingFFApp(QMainWindow):
+class AuraApp(QMainWindow):
     """Main application window — Design Guide Layout."""
 
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Wedding FaceForward")
+        self.setWindowTitle("AURA")
         self.resize(980, 720)
         self.setMinimumSize(820, 560)
 
@@ -141,7 +141,7 @@ class WeddingFFApp(QMainWindow):
         self.session_log_path = logs_dir / f"session_{session_timestamp}.txt"
         try:
             self.session_log_file = open(self.session_log_path, 'w', encoding='utf-8', buffering=1)
-            self.session_log_file.write("=== Wedding Face Forward Session Log ===\n")
+            self.session_log_file.write("=== AURA Session Log ===\n")
             self.session_log_file.write(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             self.session_log_file.write("=" * 50 + "\n\n")
         except Exception:
@@ -186,11 +186,18 @@ class WeddingFFApp(QMainWindow):
         self.splash_overlay.setGeometry(0, 0, self.width(), self.height())
         self.splash_overlay.raise_()
         self.splash_overlay.show()
+        
+        # Clear reference when destroyed to avoid "Internal C++ object already deleted"
+        self.splash_overlay.destroyed.connect(lambda: setattr(self, 'splash_overlay', None))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        if hasattr(self, 'splash_overlay') and self.splash_overlay.isVisible():
-            self.splash_overlay.setGeometry(0, 0, self.width(), self.height())
+        # Safely wrap in try-except and check for existence
+        try:
+            if getattr(self, 'splash_overlay', None) and self.splash_overlay.isVisible():
+                self.splash_overlay.setGeometry(0, 0, self.width(), self.height())
+        except RuntimeError:
+            self.splash_overlay = None  # Reference still exists but C++ object is gone
 
     def _on_worker_output(self, message, level):
         """Handle output from worker/server processes — called from background thread."""
@@ -285,7 +292,7 @@ class WeddingFFApp(QMainWindow):
         header.setSpacing(12)
 
         # Title
-        title = QLabel("Wedding FaceForward")
+        title = QLabel("AURA")
         title.setObjectName("app_title")
         header.addWidget(title)
 

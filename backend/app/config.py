@@ -1,5 +1,5 @@
 """
-Configuration module for Wedding Face Forward Phase 2 Backend.
+Configuration module for AURA Phase 2 Backend (by DARK intelligence).
 
 Loads settings from environment variables with sensible defaults.
 """

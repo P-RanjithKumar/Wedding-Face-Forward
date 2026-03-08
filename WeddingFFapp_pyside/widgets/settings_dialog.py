@@ -556,7 +556,7 @@ class SettingsDialog(QDialog):
         self._setting_rows = []  # List of SettingRow widgets
         self._has_changes = False
 
-        self.setWindowTitle("Settings — Wedding FaceForward")
+        self.setWindowTitle("Settings — AURA")
         self.setMinimumSize(700, 550)
         self.resize(780, 640)
         self.setModal(True)

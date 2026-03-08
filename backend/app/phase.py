@@ -1,5 +1,5 @@
 """
-Phase Coordinator for Wedding Face Forward.
+Phase Coordinator for AURA (by DARK intelligence).
 
 Controls the alternating phases between PROCESSING and UPLOADING.
 Key design: processing and uploading now run CONCURRENTLY — there is

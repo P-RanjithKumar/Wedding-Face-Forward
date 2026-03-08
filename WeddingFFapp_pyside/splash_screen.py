@@ -1,5 +1,5 @@
 """
-Premium Video Splash Screen for Wedding Face Forward.
+Premium Video Splash Screen for AURA (by DARK intelligence).
 Plays an intro video as a full-window overlay, then fades out to reveal the app.
 The video covers the ENTIRE app area — no gaps, no borders.
 """

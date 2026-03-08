@@ -1,6 +1,6 @@
-# System Architecture: Wedding Face Forward
+# System Architecture: AURA (by DARK intelligence)
 
-This document describes the high-level architecture and data flow of the Wedding Face Forward system.
+This document describes the high-level architecture and data flow of the AURA system.
 
 ## 🏗️ Overall Architecture
 

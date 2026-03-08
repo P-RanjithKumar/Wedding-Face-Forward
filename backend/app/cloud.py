@@ -1,5 +1,5 @@
 """
-Cloud manager for Wedding Face Forward.
+Cloud manager for AURA (by DARK intelligence).
 Handles uploading processed photos to Google Drive.
 """
 

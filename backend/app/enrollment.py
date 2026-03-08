@@ -1,5 +1,5 @@
 """
-Enrollment module for Wedding Face Forward Phase 2 Backend.
+Enrollment module for AURA Phase 2 Backend (by DARK intelligence).
 
 Handles user enrollment via selfie:
 1. Accept selfie + user info (name, phone, email)

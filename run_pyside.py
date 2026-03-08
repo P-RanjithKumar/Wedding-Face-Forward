@@ -1,5 +1,5 @@
 """
-Temporary Launcher for Wedding FaceForward (PySide6 version)
+Temporary Launcher for AURA (by DARK intelligence) (PySide6 version)
 Run this file from the root directory: python run_pyside.py
 """
 

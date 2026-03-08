@@ -475,7 +475,7 @@ class HealthMonitorDialog(QDialog):
         super().__init__(parent)
         self._mode = mode
 
-        self.setWindowTitle("Process Health — Wedding FaceForward")
+        self.setWindowTitle("Process Health — AURA")
         self.setMinimumSize(820, 550)
         self.resize(920, 620)
         self.setModal(False)   # non-modal — keep working in main app

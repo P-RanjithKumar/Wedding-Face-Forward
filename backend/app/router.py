@@ -1,5 +1,5 @@
 """
-Router module for Wedding Face Forward Phase 2 Backend.
+Router module for AURA Phase 2 Backend (by DARK intelligence).
 
 Routes processed photos to the appropriate folders:
 - Solo: Photos with exactly 1 person

@@ -1,5 +1,5 @@
 """
-File watcher module for Wedding Face Forward Phase 2 Backend.
+File watcher module for AURA Phase 2 Backend (by DARK intelligence).
 
 Monitors the Incoming directory for new photos using watchdog,
 with a periodic fallback scan for reliability.

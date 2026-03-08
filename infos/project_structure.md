@@ -1,11 +1,11 @@
-# Project Structure: Wedding Face Forward
+# Project Structure: AURA (by DARK intelligence)
 
-This document provides a comprehensive overview of the files and folders in the Wedding Face Forward project.
+This document provides a comprehensive overview of the files and folders in the AURA project.
 
 ## Directory Tree
 
 ```text
-Wedding Face Forward/
+AURA/
 ├── backend/                # Server-side logic and processing pipeline
 │   ├── app/                # Core application modules
 │   │   ├── cloud.py        # Google Drive API integration

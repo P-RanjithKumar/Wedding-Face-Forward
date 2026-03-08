@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-COMPREHENSIVE DATA ERASER - Wedding Face Forward
+COMPREHENSIVE DATA ERASER - AURA (by DARK intelligence)
 This script completely resets the database and deletes all photos and logs, 
 allowing for a completely fresh start for a new event.
 

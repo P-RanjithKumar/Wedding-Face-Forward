@@ -224,7 +224,7 @@ class SelfHealingDialog(QDialog):
         self._issue_cards = {}
         self._diagnostics = {}
 
-        self.setWindowTitle("Self-Healing Database — Wedding FaceForward")
+        self.setWindowTitle("Self-Healing Database — AURA")
         self.setMinimumSize(680, 580)
         self.resize(740, 650)
         self.setModal(True)

@@ -1,5 +1,5 @@
 """
-Upload queue manager for Wedding Face Forward.
+Upload queue manager for AURA (by DARK intelligence).
 
 Handles asynchronous uploads to Google Drive with retry logic.
 

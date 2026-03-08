@@ -1,5 +1,5 @@
 """
-Enrollment CLI for Wedding Face Forward.
+Enrollment CLI for AURA (by DARK intelligence).
 
 Simple command-line interface to enroll users via selfie.
 

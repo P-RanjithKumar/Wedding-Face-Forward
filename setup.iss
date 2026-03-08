@@ -5,7 +5,7 @@
 ; Compile with:
 ;   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
 ;
-; Output: Output\WeddingFaceForward_Setup.exe
+; Output: Output\AURA_Setup.exe
 ;
 ; This creates a professional Windows installer that:
 ;   - Installs to Program Files by default
@@ -15,13 +15,13 @@
 ;   - Uses LZMA2 compression (~60% reduction)
 ; =============================================================================
 
-#define MyAppName "Wedding Face Forward"
+#define MyAppName "AURA"
 #define MyAppVersion "1.0.8"
-#define MyAppPublisher "Wedding FaceForward"
-#define MyAppURL "https://github.com/your-repo/wedding-face-forward"
-#define MyAppExeName "WeddingFaceForward.exe"
-#define MyAppAssocName "Wedding Face Forward"
-#define MyAppAssocKey "WeddingFaceForward"
+#define MyAppPublisher "DARK intelligence"
+#define MyAppURL "https://github.com/DARK-intelligence/AURA"
+#define MyAppExeName "AURA.exe"
+#define MyAppAssocName "AURA"
+#define MyAppAssocKey "AURA"
 
 #define MyAppId "A7E3F2B1-8C4D-4E5F-9A0B-1C2D3E4F5A6B"
 
@@ -53,7 +53,7 @@ LZMANumBlockThreads=4
 
 ; Output
 OutputDir=Output
-OutputBaseFilename=WeddingFaceForward_Setup_{#MyAppVersion}
+OutputBaseFilename=AURA_Setup_{#MyAppVersion}
 
 ; Appearance
 SetupIconFile=WeddingFFapp_pyside\assets\logo.ico
@@ -87,10 +87,10 @@ Name: "startmenu";    Description: "Create a Start Menu shortcut"; GroupDescript
 
 [Files]
 ; Install the entire PyInstaller output folder
-; The source is dist\WeddingFaceForward\ which contains:
-;   WeddingFaceForward.exe   (main executable)
+; The source is dist\AURA\ which contains:
+;   AURA.exe   (main executable)
 ;   _internal\              (all bundled files)
-Source: "dist\WeddingFaceForward\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\AURA\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 ; Start Menu
@@ -108,7 +108,7 @@ Filename: "{app}\{#MyAppExeName}"; \
 
 [UninstallDelete]
 ; Clean up user data directory on uninstall (optional — comment out to keep user data)
-; Type: filesandordirs; Name: "{localappdata}\WeddingFaceForward"
+; Type: filesandordirs; Name: "{localappdata}\AURA"
 
 ; Clean up any runtime-generated files in install dir
 Type: filesandordirs; Name: "{app}\__pycache__"
@@ -126,7 +126,7 @@ begin
   // Check for minimum Windows version (Windows 10+)
   if not IsWin64 then
   begin
-    MsgBox('Wedding Face Forward requires a 64-bit version of Windows 10 or later.', 
+    MsgBox('AURA requires a 64-bit version of Windows 10 or later.', 
            mbCriticalError, MB_OK);
     Result := False;
   end;
@@ -139,7 +139,7 @@ begin
   if CurStep = ssPostInstall then
   begin
     // Create the user data directory in %LOCALAPPDATA%
-    UserDataDir := ExpandConstant('{localappdata}\WeddingFaceForward');
+    UserDataDir := ExpandConstant('{localappdata}\AURA');
     if not DirExists(UserDataDir) then
     begin
       CreateDir(UserDataDir);
@@ -163,12 +163,12 @@ var
 begin
   if CurUninstallStep = usUninstall then
   begin
-    UserDataDir := ExpandConstant('{localappdata}\WeddingFaceForward');
+    UserDataDir := ExpandConstant('{localappdata}\AURA');
     if DirExists(UserDataDir) then
     begin
       // Ask user if they want to remove their data
       Res := MsgBox(
-        'Do you want to remove your Wedding Face Forward user data?' + #13#10 +
+        'Do you want to remove your AURA user data?' + #13#10 +
         '(Database, settings, credentials, and logs)' + #13#10 + #13#10 +
         'Location: ' + UserDataDir,
         mbConfirmation, MB_YESNO);

@@ -66,7 +66,7 @@ class GitWorker(QObject):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Wedding Face Forward - Git Sync")
+        self.setWindowTitle("AURA - Git Sync (by DARK intelligence)")
         self.resize(600, 450)
         
         # Hardcode specific path for this project or use current dir

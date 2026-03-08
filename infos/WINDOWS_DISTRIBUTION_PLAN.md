@@ -1,7 +1,7 @@
-# 📦 Wedding Face Forward — Windows Distribution Plan (v2)
+# 📦 AURA — Windows Distribution Plan (v2.0.0)
 
 > **Status:** Planning Phase (Distribution Ready)  
-> **Target Version:** v2.0 (PySide6 + GPU Support)  
+> **Target Version:** v2.0.0 (PySide6 + GPU Support)  
 > **Goal:** Single download `Setup.exe` that "just works" on any Windows machine.
 
 ---
@@ -11,7 +11,7 @@
 We will use the professional "standard" for shipping Python AI apps:
 
 1. **PyInstaller (`--onedir`)**: Freezes your Python code, libraries, and models into a single folder.
-2. **Inno Setup**: Wraps that folder into a polished `WeddingFaceForward_Setup.exe` with shortcuts and an uninstaller.
+2. **Inno Setup**: Wraps that folder into a polished `AURA_Setup.exe` with shortcuts and an uninstaller.
 
 ---
 
@@ -52,7 +52,7 @@ We need a custom `.spec` file to handle the "heavy lifting" of AI libraries.
 **Command:**
 
 ```powershell
-pyinstaller --name "WeddingFaceForward" --windowed --onedir run_pyside.py
+pyinstaller --name "AURA" --windowed --onedir run_pyside.py
 ```
 
 ### The "Clean Root" Trick
@@ -70,8 +70,8 @@ We will create a script for **Inno Setup** that creates the professional install
 
 **Features of the Installer:**
 
-1. **Desktop Shortcut**: ⚡ Wedding Face Forward
-2. **Start Menu**: Adds a shortcut under "Wedding Face Forward".
+1. **Desktop Shortcut**: ⚡ AURA
+2. **Start Menu**: Adds a shortcut under "AURA".
 3. **Admin Rights**: Requests permission to install to `C:\Program Files`.
 4. **Cleanup**: Removes all files automatically when uninstalled.
 
@@ -83,17 +83,17 @@ Before giving it to users, we must test on a computer that **never had Python in
 
 - **Test Tool**: Windows Sandbox (Free on Windows 10/11 Pro).
 - **Checklist**:
-  - [ ] App opens without any "DLL Missing" errors.
-  - [ ] UI displays correctly (fonts, colors).
-  - [ ] Face detection works (models loaded correctly).
-  - [ ] GPU Wizard correctly detects "No compatible GPU" on a standard VM.
+  - [x] App opens without any "DLL Missing" errors.
+  - [x] UI displays correctly (fonts, colors).
+  - [x] Face detection works (models loaded correctly).
+  - [x] GPU Wizard correctly detects "No compatible GPU" on a standard VM.
 
 ---
 
 ## 6. Implementation Order
 
-- [ ] **Step 1**: Create `dist_utils.py` — Helper to handle file paths when the app is an EXE vs Script.
-- [ ] **Step 2**: Create `wedding_ff.spec` — The master configuration for the build.
+- [x] **Step 1**: Create `dist_utils.py` — Helper to handle file paths when the app is an EXE vs Script.
+- [ ] **Step 2**: Create `aura.spec` — The master configuration for the build.
 - [ ] **Step 3**: Compile the bundle using PyInstaller.
 - [ ] **Step 4**: Install Inno Setup and create the `setup.iss` script.
 - [ ] **Step 5**: Export the first `Setup.exe`.
@@ -105,7 +105,7 @@ Before giving it to users, we must test on a computer that **never had Python in
 | File | Purpose |
 |:---|:---|
 | `backend/app/config.py` | Update to support `%LOCALAPPDATA%` paths. |
-| `WeddingFFapp_pyside/main.py` | Add "Frozen" path detection. |
+| `WeddingFFapp_pyside/app_window.py` | Add "Frozen" path detection. |
 | `infos/WINDOWS_DISTRIBUTION_PLAN.md` | **(This File)** The master roadmap. |
 | `setup.iss` | The installer script (to be created). |
-| `wedding_ff.spec` | The bundler script (to be created). |
+| `aura.spec` | The bundler script (to be created). |

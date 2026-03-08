@@ -1,5 +1,5 @@
 """
-Image processor module for Wedding Face Forward Phase 2 Backend.
+Image processor module for AURA Phase 2 Backend (by DARK intelligence).
 
 Handles RAW→JPEG conversion, normalization, thumbnail generation,
 face detection, and embedding extraction using InsightFace.

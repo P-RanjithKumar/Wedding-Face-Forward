@@ -1,5 +1,5 @@
 """
-Worker module for Wedding Face Forward Phase 2 Backend.
+Worker module for AURA Phase 2 Backend (by DARK intelligence).
 
 Main orchestration: runs the file watcher and processes photos
 through the full pipeline using a worker pool.
@@ -352,7 +352,7 @@ def main():
     setup_logging(config.log_level)
     
     logger.info("=" * 50)
-    logger.info("  Wedding Face Forward - Phase 2 Backend")
+    logger.info("  AURA - Phase 2 Backend (by DARK intelligence)")
     logger.info("=" * 50)
     logger.info(f"Event Root: {config.event_root}")
     logger.info(f"Database: {config.db_path}")

@@ -12,7 +12,7 @@ How it works:
       - `get_project_root()` → the folder containing `run_pyside.py`
       - All sub-paths resolve relative to that folder exactly as before.
 
-  • FROZEN MODE (running WeddingFaceForward.exe via PyInstaller --onedir):
+  • FROZEN MODE (running AURA.exe via PyInstaller --onedir):
       - `sys.frozen` is set by PyInstaller.
       - `sys._MEIPASS` points to the temp extraction directory for bundled data.
       - `sys.executable` points to the .exe file itself.
@@ -24,7 +24,7 @@ How it works:
   • USER DATA (AppData):
       - Writable config (.env, database, credentials, logs) must NOT live in
         `C:\\Program Files\\...` because that's read-only on modern Windows.
-      - We store user data under `%LOCALAPPDATA%\\WeddingFaceForward\\`.
+      - We store user data under `%LOCALAPPDATA%\\AURA\\`.
       - On first launch, if no .env exists in AppData, we copy the bundled
         template from the install directory.
 
@@ -49,7 +49,8 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # App identifier — used for AppData folder name
-APP_NAME = "WeddingFaceForward"
+APP_NAME = "AURA"
+COMPANY_NAME = "DARK intelligence"
 
 
 # ─────────────────────────────────────────────────────────
@@ -293,7 +294,7 @@ def setup_sys_path():
 def print_diagnostics():
     """Print all resolved paths — useful for debugging distribution issues."""
     print("=" * 60)
-    print("  Wedding Face Forward — Path Diagnostics")
+    print("  AURA (by DARK intelligence) — Path Diagnostics")
     print("=" * 60)
     print(f"  Frozen:            {is_frozen()}")
     print(f"  sys.executable:    {sys.executable}")

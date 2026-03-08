@@ -1,11 +1,11 @@
-# 💍 Wedding Face Forward (WeddingFF)
+# 💡 AURA (by DARK intelligence)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0055ff?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![InsightFace](https://img.shields.io/badge/AI-InsightFace-red.svg)](https://github.com/deepinsight/insightface)
 
-**Wedding Face Forward** is an enterprise-grade, privacy-first automated photography ecosystem. It is designed to take photos from the moment they are captured by a professional camera, process them using cutting-edge AI for facial recognition, and deliver personalized galleries to guests via WhatsApp—all without human intervention.
+**AURA** is an enterprise-grade, privacy-first automated photography ecosystem. It is designed to take photos from the moment they are captured by a professional camera, process them using cutting-edge AI for facial recognition, and deliver personalized galleries to guests via WhatsApp—all without human intervention.
 
 ---
 
@@ -194,7 +194,7 @@ LOG_LEVEL=INFO
 
 ## 🖥️ Dashboard & Tools
 
-### Wedding Face Forward Dashboard
+### AURA Dashboard
 
 Running `python run_pyside.py` launches the "Mission Control" for your event:
 
@@ -226,4 +226,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 **P-Ranjith Kumar**
 
 * GitHub: [@P-RanjithKumar](https://github.com/P-RanjithKumar)
-* Project: [Wedding Face Forward](https://github.com/P-RanjithKumar/Wedding-Face-Forward)
+* Project: [AURA](https://github.com/P-RanjithKumar/Wedding-Face-Forward)

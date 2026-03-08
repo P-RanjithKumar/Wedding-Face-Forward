@@ -266,7 +266,7 @@ class GPUWizardDialog(QDialog):
             title = "No NVIDIA GPU Detected"
             message = (
                 "No NVIDIA GPU was found on this system.\n\n"
-                "Wedding Face Forward will run in CPU mode, which works great "
+                "AURA will run in CPU mode, which works great "
                 "for most events. GPU acceleration is an optional performance boost "
                 "for users with NVIDIA Turing (RTX 20-series) or newer GPUs."
             )

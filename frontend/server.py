@@ -1,5 +1,5 @@
 """
-Wedding Face Forward - FastAPI Web Server
+# AURA - FastAPI Web Server (by DARK intelligence)
 Provides REST API endpoints for the frontend to interact with the photo processing backend.
 """
 
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # FastAPI App
 # ============================================================
 app = FastAPI(
-    title="Wedding Face Forward",
+    title="AURA",
     description="AI-powered event photo matching and sharing",
     version="1.0.0"
 )
@@ -90,7 +90,7 @@ class PhotoItem(BaseModel):
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "wedding-face-forward"}
+    return {"status": "healthy", "service": "aura"}
 
 
 @app.get("/api/stats", response_model=StatsResponse)
@@ -392,7 +392,7 @@ def main():
     # Change to backend directory for proper imports
     os.chdir(str(backend_path))
     
-    logger.info("Starting Wedding Face Forward Web Server...")
+    logger.info("Starting AURA Web Server (by DARK intelligence)...")
     logger.info(f"Backend path: {backend_path}")
     
     uvicorn.run(
