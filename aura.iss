@@ -3,7 +3,7 @@
 ; =============================================================================
 ;
 ; Compile with:
-;   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
+;   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" aura.iss
 ;
 ; Output: Output\AURA_Setup.exe
 ;
@@ -16,7 +16,7 @@
 ; =============================================================================
 
 #define MyAppName "AURA"
-#define MyAppVersion "1.0.8"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "DARK intelligence"
 #define MyAppURL "https://github.com/DARK-intelligence/AURA"
 #define MyAppExeName "AURA.exe"
@@ -56,7 +56,7 @@ OutputDir=Output
 OutputBaseFilename=AURA_Setup_{#MyAppVersion}
 
 ; Appearance
-SetupIconFile=WeddingFFapp_pyside\assets\logo.ico
+SetupIconFile=aura_app\assets\logo.ico
 WizardStyle=modern
 WizardSizePercent=120
 

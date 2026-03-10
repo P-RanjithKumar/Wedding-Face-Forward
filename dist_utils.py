@@ -34,7 +34,7 @@ Directory map:
     get_backend_dir()      → backend/
     get_frontend_dir()     → frontend/
     get_whatsapp_dir()     → whatsapp_tool/
-    get_assets_dir()       → WeddingFFapp_pyside/assets/
+    get_assets_dir()       → aura_app/assets/
     get_models_dir()       → .insightface/models/buffalo_l/  (bundled models)
     get_user_data_dir()    → writable folder for .env, DB, credentials, logs
 """
@@ -121,8 +121,8 @@ def get_whatsapp_dir() -> Path:
 
 
 def get_pyside_package_dir() -> Path:
-    """Return the WeddingFFapp_pyside/ package directory."""
-    return get_bundled_root() / "WeddingFFapp_pyside"
+    """Return the aura_app/ package directory."""
+    return get_bundled_root() / "aura_app"
 
 
 def get_assets_dir() -> Path:

@@ -26,6 +26,7 @@ MANIFEST
 #  Usually these files are written by a python script, and contain the bin holder for a compiled soul
 *.manifest
 *.spec
+!aura.spec
 
 # --- Installer / Output ---
 Output/

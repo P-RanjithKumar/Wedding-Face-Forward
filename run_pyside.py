@@ -75,5 +75,5 @@ if __name__ == "__main__":
             sys.exit(0)
 
     # --- Main GUI Application ---
-    from WeddingFFapp_pyside.main import run
+    from aura_app.main import run
     run()

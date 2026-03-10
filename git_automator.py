@@ -22,7 +22,7 @@ class GitWorker(QObject):
         # is MUCH faster than 'git add .' because it avoids scanning massive ignored folders.
         cmds = [
             ['git', 'add', '-u'],
-            ['git', 'add', '*.py', 'WeddingFFapp_pyside/*.py', 'backend/*.py', 'frontend/*.py', 'infos/*.md', 'setup.iss'],
+            ['git', 'add', '*.py', 'aura_app/*.py', 'backend/*.py', 'frontend/*.py', 'infos/*.md', 'aura.iss', 'aura.spec'],
             ['git', 'commit', '-m', self.commit_msg],
             ['git', 'push', '-u', 'origin', 'main']
         ]
@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
         # Hardcode specific path for this project or use current dir
         self.repo_path = os.path.dirname(os.path.abspath(__file__))
         
-        self.settings = QSettings('WeddingGitApp', 'Settings')
+        self.settings = QSettings('AuraGitApp', 'Settings')
         
         self._init_ui()
         self._apply_styles()

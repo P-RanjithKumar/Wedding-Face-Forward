@@ -187,7 +187,7 @@ LOG_LEVEL=INFO
   * `/Processed`: Normalized JPEGs for web delivery.
   * `/People`: AI-generated folders per identified person.
 * `run_pyside.py`: The main launcher for the desktop monitoring application.
-* `/WeddingFFapp_pyside`: Modular PySide6 application source code.
+* `/aura_app`: Modular PySide6 application source code.
 * `git_automator.py`: A utility to quickly sync local changes to your git repo.
 
 ---

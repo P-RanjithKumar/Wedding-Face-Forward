@@ -18,7 +18,7 @@ def run():
     multiprocessing.freeze_support()
 
     import ctypes
-    myappid = u'dark_intelligence.aura.admin.1.0'  # unique string
+    myappid = u'dark_intelligence.aura.admin.2.0.0'  # unique string
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     app = QApplication(sys.argv)

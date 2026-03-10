@@ -1,13 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-Wedding Face Forward — PyInstaller Spec File
-=============================================
+AURA — PyInstaller Spec File (v2.0.0)
+=====================================
 
 Build command:
-    pyinstaller wedding_ff.spec
+    pyinstaller aura.spec
 
 This produces a FOLDER-mode distribution (--onedir) in:
-    dist/WeddingFaceForward/
+    dist/AURA/
 
 Why --onedir and NOT --onefile:
   • Startup is 5-10x faster (no temp extraction of 500+ MB)
@@ -29,7 +29,7 @@ PROJECT_ROOT = os.path.abspath('.')
 BACKEND_DIR = os.path.join(PROJECT_ROOT, 'backend')
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, 'frontend')
 WHATSAPP_DIR = os.path.join(PROJECT_ROOT, 'whatsapp_tool')
-PYSIDE_DIR = os.path.join(PROJECT_ROOT, 'WeddingFFapp_pyside')
+PYSIDE_DIR = os.path.join(PROJECT_ROOT, 'aura_app')
 ASSETS_DIR = os.path.join(PYSIDE_DIR, 'assets')
 
 # InsightFace models — bundled for offline use
@@ -65,23 +65,23 @@ hidden_imports = [
     # frontend
     'server',
 
-    # WeddingFFapp_pyside
-    'WeddingFFapp_pyside',
-    'WeddingFFapp_pyside.main',
-    'WeddingFFapp_pyside.app_window',
-    'WeddingFFapp_pyside.theme',
-    'WeddingFFapp_pyside.process_manager',
-    'WeddingFFapp_pyside.worker_bridge',
+    # aura_app
+    'aura_app',
+    'aura_app.main',
+    'aura_app.app_window',
+    'aura_app.theme',
+    'aura_app.process_manager',
+    'aura_app.worker_bridge',
 
-    # WeddingFFapp_pyside.widgets
-    'WeddingFFapp_pyside.widgets',
-    'WeddingFFapp_pyside.widgets.settings_dialog',
-    'WeddingFFapp_pyside.widgets.health_monitor',
-    'WeddingFFapp_pyside.widgets.self_healing_dialog',
-    'WeddingFFapp_pyside.widgets.auth_dialog',
-    'WeddingFFapp_pyside.widgets.gpu_wizard',
-    'WeddingFFapp_pyside.widgets.whatsapp_tracker',
-    'WeddingFFapp_pyside.splash_screen',
+    # aura_app.widgets
+    'aura_app.widgets',
+    'aura_app.widgets.settings_dialog',
+    'aura_app.widgets.health_monitor',
+    'aura_app.widgets.self_healing_dialog',
+    'aura_app.widgets.auth_dialog',
+    'aura_app.widgets.gpu_wizard',
+    'aura_app.widgets.whatsapp_tracker',
+    'aura_app.splash_screen',
 
     # whatsapp_tool
     'whatsapp_tool.db_whatsapp_sender',
@@ -265,10 +265,10 @@ datas = [
     (os.path.join(WHATSAPP_DIR, 'db_whatsapp_sender.py'), 'whatsapp_tool'),
 
     # PySide6 app package (needed for imports to work)
-    (PYSIDE_DIR, 'WeddingFFapp_pyside'),
+    (PYSIDE_DIR, 'aura_app'),
 
     # Assets (app icon)
-    (os.path.join(ASSETS_DIR, 'logo.png'), os.path.join('WeddingFFapp_pyside', 'assets')),
+    (os.path.join(ASSETS_DIR, 'logo.png'), os.path.join('aura_app', 'assets')),
 
     # Intro video (splash screen animation)
     (os.path.join(PROJECT_ROOT, 'logo'), 'logo'),
@@ -433,9 +433,8 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=excludes,
-    noarchive=False,
-    optimize=0,
+    exclude_binaries=True,
+    name='AURA',
 )
 
 pyz = PYZ(a.pure)
@@ -445,7 +444,7 @@ exe = EXE(
     a.scripts,
     [],                      # Empty = --onedir mode (not --onefile)
     exclude_binaries=True,   # Binaries go in the folder, not the exe
-    name='WeddingFaceForward',
+    name='AURA',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -466,5 +465,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name='WeddingFaceForward',
+    name='AURA',
 )

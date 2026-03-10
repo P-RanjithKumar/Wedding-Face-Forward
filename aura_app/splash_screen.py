@@ -26,6 +26,7 @@ class PremiumSplashScreen(QWidget):
 
         # ── Video Widget — direct child, no layout ───────────────────────────
         self.video_widget = QVideoWidget(self)
+        self.video_widget.show()
         # KeepAspectRatioByExpanding = scale up to fill, cropping overflow
         self.video_widget.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatioByExpanding)
 
@@ -40,14 +41,13 @@ class PremiumSplashScreen(QWidget):
         video_path = self._find_video()
         if video_path:
             self.player.setSource(QUrl.fromLocalFile(video_path))
+        else:
+            # If no video found, skip the splash screen entirely
+            QTimer.singleShot(0, self._finish)
 
-        # When the video finishes, start fade-out
+        # When the video finishes or fails, start fade-out
         self.player.mediaStatusChanged.connect(self._on_media_status)
-
-        # ── Overall opacity effect for the smooth fade-out ───────────────────
-        self.overlay_opacity = QGraphicsOpacityEffect(self)
-        self.setGraphicsEffect(self.overlay_opacity)
-        self.overlay_opacity.setOpacity(1.0)
+        self.player.errorOccurred.connect(self._on_error)
 
         self._started = False
 
@@ -58,20 +58,28 @@ class PremiumSplashScreen(QWidget):
     def _find_video():
         """Locate the intro video — check known locations."""
         candidates = []
+        target_name = "intro-video.mp4"
 
+        def _scan_dir(d):
+            if not os.path.isdir(d):
+                return
+            for f in os.listdir(d):
+                f_lower = f.lower()
+                if f_lower == target_name:
+                    candidates.insert(0, os.path.join(d, f)) # Highest priority
+                elif f_lower.endswith(('.mp4', '.avi', '.mkv', '.mov', '.webm')):
+                    candidates.append(os.path.join(d, f))
+
+        # 1. Check bundled root (PyInstaller _internal where 'datas' are placed)
+        bundled_root = dist_utils.get_bundled_root()
+        _scan_dir(os.path.join(str(bundled_root), "logo"))
+
+        # 2. Check project root (dev mode or beside exe)
         project_root = dist_utils.get_project_root()
-        logo_dir = os.path.join(str(project_root), "logo")
-        if os.path.isdir(logo_dir):
-            for f in os.listdir(logo_dir):
-                if f.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.webm')):
-                    candidates.append(os.path.join(logo_dir, f))
+        _scan_dir(os.path.join(str(project_root), "logo"))
 
-        # Fallback: assets folder (for packaged app)
-        assets_dir = os.path.join(os.path.dirname(__file__), "assets")
-        if os.path.isdir(assets_dir):
-            for f in os.listdir(assets_dir):
-                if f.lower().endswith(('.mp4', '.avi', '.mkv', '.mov', '.webm')):
-                    candidates.append(os.path.join(assets_dir, f))
+        # 3. Fallback: assets folder (for packaged app)
+        _scan_dir(str(dist_utils.get_assets_dir()))
 
         return candidates[0] if candidates else None
 
@@ -114,11 +122,20 @@ class PremiumSplashScreen(QWidget):
         self.player.play()
 
     def _on_media_status(self, status):
-        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+        # Also finish on InvalidMedia so we don't hang if codec is missing
+        if status in (QMediaPlayer.MediaStatus.EndOfMedia, QMediaPlayer.MediaStatus.InvalidMedia):
             self._start_fade_out()
+
+    def _on_error(self, error, error_string):
+        print(f"Splash player error: {error} - {error_string}")
+        self._start_fade_out()
 
     def _start_fade_out(self):
         """Fade the entire overlay out over ~600ms."""
+        self.overlay_opacity = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.overlay_opacity)
+        self.overlay_opacity.setOpacity(1.0)
+
         self.fade_out = QPropertyAnimation(self.overlay_opacity, b"opacity")
         self.fade_out.setDuration(600)
         self.fade_out.setStartValue(1.0)

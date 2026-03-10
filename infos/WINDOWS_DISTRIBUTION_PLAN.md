@@ -93,9 +93,9 @@ Before giving it to users, we must test on a computer that **never had Python in
 ## 6. Implementation Order
 
 - [x] **Step 1**: Create `dist_utils.py` — Helper to handle file paths when the app is an EXE vs Script.
-- [ ] **Step 2**: Create `aura.spec` — The master configuration for the build.
+- [x] **Step 2**: Create `aura.spec` — The master configuration for the build.
 - [ ] **Step 3**: Compile the bundle using PyInstaller.
-- [ ] **Step 4**: Install Inno Setup and create the `setup.iss` script.
+- [x] **Step 4**: Install Inno Setup and create the `aura.iss` script.
 - [ ] **Step 5**: Export the first `Setup.exe`.
 
 ---
@@ -105,7 +105,7 @@ Before giving it to users, we must test on a computer that **never had Python in
 | File | Purpose |
 |:---|:---|
 | `backend/app/config.py` | Update to support `%LOCALAPPDATA%` paths. |
-| `WeddingFFapp_pyside/app_window.py` | Add "Frozen" path detection. |
+| `aura_app/app_window.py` | Add "Frozen" path detection. |
 | `infos/WINDOWS_DISTRIBUTION_PLAN.md` | **(This File)** The master roadmap. |
-| `setup.iss` | The installer script (to be created). |
-| `aura.spec` | The bundler script (to be created). |
+| `aura.iss` | The installer script. |
+| `aura.spec` | The bundler script. |
