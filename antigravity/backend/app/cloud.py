@@ -1,0 +1,742 @@
+"""
+Cloud manager for AURA (by DARK intelligence).
+Handles uploading processed photos to Google Drive.
+"""
+
+import logging
+import os
+import ssl
+import threading
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional, Dict
+from functools import wraps
+
+from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials as UserCredentials
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from googleapiclient.errors import HttpError
+import httplib2
+import google_auth_httplib2
+
+from .config import get_config
+import dist_utils
+
+logger = logging.getLogger(__name__)
+
+SCOPES = dist_utils.DRIVE_SCOPES  # drive.file, see dist_utils
+
+
+def retry_with_backoff(max_retries: int = 3, initial_delay: int = 2):
+    """Decorator to retry function with exponential backoff on failure."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            delay = initial_delay
+            last_exception = None
+            
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except (HttpError, TimeoutError, OSError, ssl.SSLError, ConnectionError) as e:
+                    last_exception = e
+                    error_msg = str(e)
+                    
+                    # Don't retry on certain errors
+                    if isinstance(e, HttpError):
+                        if e.resp.status in [400, 401, 403, 404]:
+                            logger.error(f"Non-retryable error: {error_msg}")
+                            raise
+                    
+                    # On SSL errors, try to rebuild the Drive service
+                    # The httplib2 connection pool may be corrupted
+                    if isinstance(e, (ssl.SSLError, OSError)) and 'ssl' in error_msg.lower():
+                        self_obj = args[0] if args and isinstance(args[0], CloudManager) else None
+                        if self_obj:
+                            self_obj._ssl_error_count += 1
+                            if self_obj._ssl_error_count >= 3:
+                                self_obj._rebuild_service()
+                    
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Attempt {attempt + 1} failed: {error_msg}. Retrying in {delay}s...")
+                        time.sleep(delay)
+                        delay = min(delay * 2, 16)  # Exponential backoff, capped at 16s
+                    else:
+                        logger.error(f"All {max_retries} attempts failed: {error_msg}")
+            
+            raise last_exception
+        return wrapper
+    return decorator
+
+
+class CloudManager:
+    """Manages Google Drive interactions."""
+
+    def __init__(self, config=None):
+        self.config = config or get_config()
+        self.creds = None
+        self.service = None  # Main service (folder management, not used for parallel uploads)
+        self.root_folder_id = self.config.drive_root_folder_id
+        self._folder_cache: Dict[str, str] = {}  # Cache path -> folder_id
+        self._folder_lock = threading.Lock()  # Thread-safe folder creation
+        self._ssl_error_count = 0  # Track SSL errors for service rebuild
+        self._rebuild_lock = threading.Lock()  # Prevent concurrent rebuilds
+        self._last_refresh_time = 0.0  # Track when connection was last refreshed
+        # Proactive refresh interval (seconds). Rebuild connection before it goes stale.
+        self._refresh_interval = int(os.getenv('CLOUD_REFRESH_INTERVAL', '90'))
+        self._total_refreshes = 0  # Counter for monitoring
+        self._api_lock = threading.RLock()  # Prevent rebuild during active API calls
+        
+        # Thread-local storage: each upload thread gets its OWN httplib2 + service.
+        # httplib2 is NOT thread-safe — sharing it causes SSL WRONG_VERSION_NUMBER errors.
+        self._thread_local = threading.local()
+        
+        self.initialize()
+
+    def initialize(self) -> None:
+        """Authenticate and build the Drive service.
+
+        Order: the user's own Google sign-in (token.json) first; a service
+        account file only if one was explicitly provided. Neither is shipped
+        in the installer, so a fresh install starts "not connected" until the
+        user signs in from the Auth dialog.
+        """
+        creds_path = self.config.google_credentials_file
+
+        # Search for token.json in multiple locations
+        user_dir = dist_utils.get_user_data_dir()
+        root_dir = dist_utils.get_project_root()
+        
+        possible_token_paths = [
+            dist_utils.get_token_path(),   # secrets folder
+            user_dir / "token.json",
+            root_dir / "token.json",
+            self.config.event_root.parent / "token.json",
+            user_dir / "backend" / "token.json",
+            root_dir / "backend" / "token.json",
+        ]
+        
+        token_path = None
+        for path in possible_token_paths:
+            if path.exists():
+                token_path = path
+                break
+        
+        try:
+            # First try Token (User Credentials) - required for personal Google Drive uploads
+            if token_path and token_path.exists():
+                logger.info(f"Loading user credentials from {token_path}")
+                self.creds = UserCredentials.from_authorized_user_file(str(token_path), SCOPES)
+
+                # ── Auth Persistence: proactively refresh expired token ──────
+                # If the access token is expired but we have a refresh_token,
+                # silently obtain a new access token and save it to disk.
+                # This avoids silent 401 failures during uploads and removes
+                # the need to run setup_auth.py manually.
+                if self.creds.expired and self.creds.refresh_token:
+                    try:
+                        logger.info("Access token expired — refreshing via refresh_token...")
+                        self.creds.refresh(Request())
+                        token_path.write_text(self.creds.to_json(), encoding="utf-8")
+                        logger.info(f"Token refreshed and saved to {token_path}")
+                    except Exception as refresh_err:
+                        # invalid_grant = Google rejected the saved sign-in
+                        # (expired, revoked, password changed, app in Testing
+                        # mode for >7 days). Before 2026-11-14 AURA carried on
+                        # as "connected" and every upload then failed one by
+                        # one; now Drive is reported as not connected.
+                        if "invalid_grant" in str(refresh_err):
+                            logger.error(
+                                "Google Drive sign-in has expired or was revoked. Uploads are OFF "
+                                "until you reconnect: Auth menu > Connect Google Drive."
+                            )
+                            self.creds = None
+                            self.service = None
+                            return
+                        logger.warning(
+                            f"Could not auto-refresh token: {refresh_err}. "
+                            "Open the 🔑 AUTH dialog in the dashboard to re-authenticate."
+                        )
+                elif not self.creds.refresh_token:
+                    logger.warning(
+                        "token.json has no refresh_token. "
+                        "Open the 🔑 AUTH dialog to re-authenticate."
+                    )
+
+            # Fallback to Service Account
+            elif creds_path and creds_path.exists():
+                logger.info(f"Loading service account from {creds_path}")
+                self.creds = service_account.Credentials.from_service_account_file(
+                    str(creds_path), scopes=SCOPES
+                )
+            else:
+                logger.warning(
+                    "Google Drive is not connected yet. Cloud upload is off until you "
+                    "sign in (Auth menu > Connect Google Drive)."
+                )
+                return
+            
+            # Configure HTTP client with timeouts
+            # Configure HTTP client with timeouts
+            # httplib2 uses a single timeout for both connect and read
+            timeout = max(self.config.upload_timeout_connect, self.config.upload_timeout_read)
+            http = httplib2.Http(
+                timeout=timeout,
+                disable_ssl_certificate_validation=False
+            )
+            
+            # Authorize the http object explicitly
+            authed_http = google_auth_httplib2.AuthorizedHttp(self.creds, http=http)
+            
+            self.service = build('drive', 'v3', http=authed_http)
+            self._last_refresh_time = time.time()  # Mark connection as fresh
+            logger.info(f"Successfully connected to Google Drive API (timeout={timeout}s, refresh_interval={self._refresh_interval}s)")
+            
+            # No folder configured: on new installs (.env.template sets
+            # DRIVE_USE_APP_FOLDER=true) use an "AURA" folder in the signed-in
+            # user's own Drive instead of cluttering My Drive. Existing setups
+            # without the flag keep uploading to the Drive root as before, so
+            # an event already in progress is not split across two places.
+            use_app_folder = os.getenv("DRIVE_USE_APP_FOLDER", "false").lower() == "true"
+            if not self.root_folder_id and use_app_folder and isinstance(self.creds, UserCredentials):
+                self.root_folder_id = self._find_or_create_default_root() or ""
+            if not self.root_folder_id:
+                logger.warning("DRIVE_ROOT_FOLDER_ID not set. Files will be uploaded to the Drive root.")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize Google Drive: {e}")
+            self.service = None
+
+    DEFAULT_ROOT_FOLDER_NAME = "AURA"
+
+    def _find_or_create_default_root(self) -> Optional[str]:
+        """Return the ID of the "AURA" folder at the top of the user's My Drive,
+        creating it if needed. Returns None on failure (uploads then go to the
+        Drive root, as before)."""
+        name = self.DEFAULT_ROOT_FOLDER_NAME
+        try:
+            query = (f"mimeType='application/vnd.google-apps.folder' and name='{name}' "
+                     "and 'root' in parents and trashed=false")
+            found = self.service.files().list(
+                q=query, fields="files(id, name)", pageSize=1
+            ).execute()
+            items = found.get('files', []) if isinstance(found, dict) else []
+            if items:
+                folder_id = items[0]['id']
+                logger.info(f"Using Drive folder '{name}' ({folder_id})")
+                return folder_id
+            return self._create_folder(name)
+        except Exception as e:
+            logger.error(f"Could not find or create Drive folder '{name}': {e}")
+            return None
+
+    @property
+    def is_enabled(self) -> bool:
+        """Check if cloud upload is configured and working."""
+        return self.service is not None
+
+    def _get_thread_service(self):
+        """
+        Get (or lazily create) a Drive service instance local to THIS thread.
+
+        httplib2.Http is NOT thread-safe. When multiple upload threads share
+        the same service object they corrupt each other's SSL connection state,
+        causing 'WRONG_VERSION_NUMBER' errors.
+
+        This method returns a per-thread service so every upload thread owns
+        its own HTTP stack. Credentials are shared (they are read-only) but
+        the transport layer is completely isolated.
+        """
+        if not self.creds:
+            return self.service  # Fallback for unauthenticated path
+        
+        if not getattr(self._thread_local, 'service', None):
+            timeout = max(
+                self.config.upload_timeout_connect,
+                self.config.upload_timeout_read
+            )
+            http = httplib2.Http(
+                timeout=timeout,
+                disable_ssl_certificate_validation=False
+            )
+            authed_http = google_auth_httplib2.AuthorizedHttp(self.creds, http=http)
+            self._thread_local.service = build('drive', 'v3', http=authed_http)
+            logger.debug(
+                f"[{threading.current_thread().name}] Created thread-local Drive service"
+            )
+        return self._thread_local.service
+
+    def _invalidate_thread_service(self):
+        """Force the current thread to rebuild its Drive service on next use."""
+        self._thread_local.service = None
+
+    def _rebuild_service(self, reason: str = "SSL errors"):
+        """Rebuild the Google Drive service completely from scratch.
+        
+        Creates a brand new HTTP client, authorized session, and Drive service.
+        Also clears the folder cache to avoid stale references.
+        
+        IMPORTANT: This must NOT be called while another thread is mid-API-call,
+        as replacing self.service can cause native SSL memory crashes. Use
+        check_and_refresh() between operations instead.
+        
+        Args:
+            reason: Why the rebuild was triggered (for logging).
+        """
+        if not self._rebuild_lock.acquire(blocking=False):
+            return  # Another thread is already rebuilding
+        try:
+            # Wait for any in-progress API calls to finish before replacing service
+            with self._api_lock:
+                self._total_refreshes += 1
+                logger.warning(f"[Refresh #{self._total_refreshes}] Rebuilding Google Drive service (reason: {reason})...")
+                self._ssl_error_count = 0
+                
+                # Rebuild HTTP client and service from scratch
+                timeout = max(self.config.upload_timeout_connect, self.config.upload_timeout_read)
+                http = httplib2.Http(
+                    timeout=timeout,
+                    disable_ssl_certificate_validation=False
+                )
+                authed_http = google_auth_httplib2.AuthorizedHttp(self.creds, http=http)
+                self.service = build('drive', 'v3', http=authed_http)
+                
+                # Also invalidate this thread's local service so it rebuilds on next use
+                self._invalidate_thread_service()
+                
+                # Clear folder cache — folders still exist in Drive, they'll be
+                # re-discovered on the next ensure_folder_path() call.
+                with self._folder_lock:
+                    old_cache_size = len(self._folder_cache)
+                    self._folder_cache.clear()
+                
+                self._last_refresh_time = time.time()  # Reset the timer
+                logger.info(f"[Refresh #{self._total_refreshes}] Google Drive service rebuilt successfully (cleared {old_cache_size} cached folders)")
+        except Exception as e:
+            logger.error(f"Failed to rebuild Google Drive service: {e}")
+        finally:
+            self._rebuild_lock.release()
+
+    def check_and_refresh(self):
+        """Check if the connection is stale and rebuild if needed.
+        
+        This should be called BETWEEN upload operations (not during),
+        typically from the upload queue worker loop. This ensures the
+        service object is never replaced while another thread is using it.
+        
+        Returns:
+            True if a refresh was performed, False otherwise.
+        """
+        if not self.is_enabled or not self.creds:
+            return False
+        
+        elapsed = time.time() - self._last_refresh_time
+        if elapsed >= self._refresh_interval:
+            logger.info(f"Connection age {elapsed:.0f}s >= {self._refresh_interval}s refresh interval. Proactively refreshing...")
+            self._rebuild_service(reason=f"proactive refresh after {elapsed:.0f}s")
+            return True
+        return False
+
+    @retry_with_backoff(max_retries=3, initial_delay=2)
+    def _find_folder(self, name: str, parent_id: Optional[str] = None) -> Optional[str]:
+        """Find a folder by name within a parent folder."""
+        if not self.is_enabled:
+            return None
+            
+        query = f"mimeType='application/vnd.google-apps.folder' and name='{name}' and trashed=false"
+        if parent_id:
+            query += f" and '{parent_id}' in parents"
+            
+        svc = self._get_thread_service()
+        results = svc.files().list(
+            q=query, fields="files(id, name)", pageSize=1
+        ).execute()
+        
+        # Validate response is a dict (can be malformed during network issues)
+        if not isinstance(results, dict):
+            logger.warning(f"Unexpected API response type for _find_folder: {type(results)}")
+            return None
+        
+        items = results.get('files', [])
+        return items[0]['id'] if items else None
+
+    @retry_with_backoff(max_retries=3, initial_delay=2)
+    def rename_folder(self, old_name: str, new_name: str, parent_id: Optional[str] = None) -> bool:
+        """
+        Rename an existing folder in Google Drive.
+        
+        Args:
+            old_name: Current folder name to find.
+            new_name: New name to assign.
+            parent_id: Parent folder ID to search within (defaults to root).
+            
+        Returns:
+            True if renamed successfully, False otherwise.
+        """
+        if not self.is_enabled:
+            return False
+        
+        if self.config.dry_run:
+            logger.info(f"[DRY RUN] Would rename cloud folder: {old_name} -> {new_name}")
+            return True
+        
+        # Find the folder by its old name
+        search_parent = parent_id or self.root_folder_id
+        folder_id = self._find_folder(old_name, search_parent)
+        
+        if not folder_id:
+            logger.warning(f"Cloud folder not found for rename: {old_name}")
+            return False
+        
+        try:
+            # Rename in-place via Drive API
+            svc = self._get_thread_service()
+            svc.files().update(
+                fileId=folder_id,
+                body={'name': new_name}
+            ).execute()
+            
+            logger.info(f"Renamed cloud folder: {old_name} -> {new_name} ({folder_id})")
+            
+            # Invalidate stale cache entries that contain the old name
+            stale_keys = [k for k in self._folder_cache if old_name in k]
+            for key in stale_keys:
+                del self._folder_cache[key]
+            
+            # Re-cache with new name so future lookups are fast
+            if parent_id:
+                # Build partial cache key
+                for key, val in list(self._folder_cache.items()):
+                    if val == search_parent:
+                        self._folder_cache[f"{key}/{new_name}"] = folder_id
+                        break
+                else:
+                    self._folder_cache[new_name] = folder_id
+            else:
+                self._folder_cache[new_name] = folder_id
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to rename cloud folder {old_name} -> {new_name}: {e}")
+            return False
+
+    @retry_with_backoff(max_retries=3, initial_delay=2)
+    def _create_folder(self, name: str, parent_id: Optional[str] = None) -> Optional[str]:
+        """Create a new folder."""
+        if not self.is_enabled:
+            return None
+            
+        metadata = {
+            'name': name,
+            'mimeType': 'application/vnd.google-apps.folder',
+        }
+        if parent_id:
+            metadata['parents'] = [parent_id]
+            
+        if self.config.dry_run:
+            logger.info(f"[DRY RUN] Would create cloud folder: {name}")
+            return "dry_run_folder_id"
+
+        svc = self._get_thread_service()
+        result = svc.files().create(
+            body=metadata, fields='id'
+        ).execute()
+        
+        # Validate response is a dict (can be malformed during network issues)
+        if not isinstance(result, dict):
+            logger.error(f"Unexpected API response type for _create_folder('{name}'): {type(result)}")
+            return None
+        
+        folder_id = result.get('id')
+        if not folder_id:
+            logger.error(f"API response missing 'id' for _create_folder('{name}'): {result}")
+            return None
+        
+        logger.info(f"Created cloud folder: {name} ({folder_id})")
+        return folder_id
+
+    def _get_path_lock(self, path: str) -> threading.Lock:
+        """Get or create a lock specific to a folder path.
+        
+        This allows threads working on DIFFERENT folder paths to proceed
+        in parallel, while threads working on the SAME path serialize
+        their find-or-create operations to prevent duplicate folders.
+        """
+        with self._folder_lock:
+            if not hasattr(self, "_path_locks"):
+                self._path_locks: Dict[str, threading.Lock] = {}
+            if path not in self._path_locks:
+                self._path_locks[path] = threading.Lock()
+            return self._path_locks[path]
+
+    def ensure_folder_path(self, path_parts: list[str]) -> Optional[str]:
+        """
+        Ensure a folder hierarchy exists in Drive.
+        
+        Thread-safe: uses per-path locks so that only threads working on the
+        EXACT SAME folder path block each other. The entire find-or-create
+        sequence (network calls included) is held under the path lock to
+        guarantee no two threads can simultaneously discover "missing" and
+        both create the same folder.
+        
+        Args:
+            path_parts: List of folder names, e.g. ["People", "Person_123", "Solo"]
+            
+        Returns:
+            The ID of the final folder, or None on error.
+        """
+        if not self.is_enabled:
+            return None
+
+        # Check cache without lock first (fast path, read-only)
+        cache_key = "/".join(path_parts)
+        if cache_key in self._folder_cache:
+            return self._folder_cache[cache_key]
+
+        current_parent_id = self.root_folder_id
+        current_path_str = ""
+
+        for part in path_parts:
+            # Build up key for partial cache check
+            current_path_str = f"{current_path_str}/{part}" if current_path_str else part
+            
+            # Quick cache check (no lock needed for reads)
+            if current_path_str in self._folder_cache:
+                current_parent_id = self._folder_cache[current_path_str]
+                continue
+            
+            # Acquire a lock specific to THIS folder path.
+            # This keeps the find+create atomic for the same path,
+            # while threads working on different paths are NOT blocked.
+            path_lock = self._get_path_lock(current_path_str)
+            acquired = path_lock.acquire(timeout=60)
+            if not acquired:
+                logger.error(f"Timeout waiting for folder lock (path: {current_path_str})")
+                return None
+            
+            try:
+                # Double-check cache after acquiring lock
+                if current_path_str in self._folder_cache:
+                    current_parent_id = self._folder_cache[current_path_str]
+                    continue
+                
+                # Both find AND create happen INSIDE the path lock.
+                # This is safe because only threads targeting the same folder
+                # path will contend; other paths proceed in parallel.
+                folder_id = self._find_folder(part, current_parent_id)
+                if not folder_id:
+                    folder_id = self._create_folder(part, current_parent_id)
+                    
+                    if not folder_id:
+                        logger.error(f"Failed to create cloud folder: {part} (parent: {current_parent_id})")
+                        return None
+                
+                # Update cache
+                with self._folder_lock:
+                    self._folder_cache[current_path_str] = folder_id
+                
+                current_parent_id = folder_id
+                
+            except Exception as e:
+                logger.error(f"Error ensuring cloud folder '{part}': {e}")
+                return None
+            finally:
+                path_lock.release()
+
+        return current_parent_id
+
+    def upload_file(self, local_path: Path, relative_to: Path) -> bool:
+        """
+        Uploads a file to Google Drive, mirroring the folder structure.
+        
+        Args:
+            local_path: Absolute path to the file.
+            relative_to: Base path to calculate relative folder structure.
+                         e.g., processed_path.parent relative to EventRoot.
+        """
+        if not self.is_enabled:
+            return False
+
+        if self.config.dry_run:
+            logger.info(f"[DRY RUN] Would upload to cloud: {local_path.name}")
+            return True
+
+        try:
+            # Calculate folder structure
+            # e.g. local: .../EventRoot/People/Person_123/Solo/img.jpg
+            # relative_to: .../EventRoot
+            # relative_path: People/Person_123/Solo/img.jpg
+            # parts: ["People", "Person_123", "Solo"]
+            relative_path = local_path.relative_to(relative_to)
+            folder_parts = list(relative_path.parent.parts)
+            
+            # Ensure folder exists
+            parent_folder_id = self.ensure_folder_path(folder_parts)
+            if not parent_folder_id:
+                logger.error(f"Could not create folder structure for {local_path.name}")
+                return False
+
+            # Check if file already exists to avoid duplicates
+            existing_id = self._find_folder(local_path.name, parent_folder_id)
+            if existing_id:
+                logger.info(f"File already exists in cloud: {local_path.name}, skipping.")
+                return True
+
+            # Upload with retry logic for transient network/SSL errors
+            return self._upload_file_with_retry(local_path, parent_folder_id)
+
+        except Exception as e:
+            logger.error(f"Failed to upload {local_path.name}: {e}")
+            return False
+
+    @retry_with_backoff(max_retries=3, initial_delay=2)
+    def _upload_file_with_retry(self, local_path: Path, parent_folder_id: str) -> bool:
+        """Perform the actual file upload using a thread-local Drive service.
+        
+        Each upload thread uses its own httplib2 instance to avoid SSL
+        corruption errors caused by concurrent access to a shared service.
+        """
+        # Use thread-local service to avoid httplib2 thread-safety issues
+        thread_service = self._get_thread_service()
+        
+        file_metadata = {
+            'name': local_path.name,
+            'parents': [parent_folder_id]
+        }
+        media = MediaFileUpload(
+            str(local_path),
+            mimetype='image/jpeg',
+            resumable=True
+        )
+        
+        result = thread_service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        
+        # Validate response
+        if not isinstance(result, dict):
+            raise OSError(f"Unexpected API response type during upload: {type(result)}")
+        
+        file_id = result.get('id')
+        if not file_id:
+            raise OSError(f"API response missing 'id' during upload: {result}")
+        
+        logger.info(f"Uploaded to cloud: {local_path.name} ({file_id})")
+        return True
+
+    def get_folder_link(self, folder_id: str) -> Optional[str]:
+        """Get web link for a folder."""
+        if not self.is_enabled:
+            return None
+        try:
+            svc = self._get_thread_service()
+            file = svc.files().get(
+                fileId=folder_id, fields='webViewLink'
+            ).execute()
+            return file.get('webViewLink')
+        except Exception:
+            return None
+
+    @retry_with_backoff(max_retries=3, initial_delay=2)
+    def share_folder_publicly(self, folder_id: str) -> bool:
+        """
+        Sets permission for a folder to 'anyone with the link can view'.
+        """
+        if not self.is_enabled:
+            return False
+
+        if self.config.dry_run:
+            logger.info(f"[DRY RUN] Would set public permission on folder {folder_id}")
+            return True
+
+        try:
+            # Check if already shared (optional optimization, but API is idempotent enough usually)
+            # For simplicity, we just apply it. valid roles: reader, commenter, writer
+            # valid types: user, group, domain, anyone
+            svc = self._get_thread_service()
+            svc.permissions().create(
+                fileId=folder_id,
+                body={'role': 'reader', 'type': 'anyone'},
+                fields='id'
+            ).execute()
+            logger.info(f"Set public permission on folder {folder_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to set permission on {folder_id}: {e}")
+            return False
+
+# Global instance
+_cloud: Optional[CloudManager] = None
+
+def get_cloud() -> CloudManager:
+    global _cloud
+    if _cloud is None:
+        _cloud = CloudManager()
+    return _cloud
+
+
+def get_auth_status() -> dict:
+    """Return a snapshot of the current auth token status.
+
+    Returns:
+        dict with keys:
+            token_exists (bool): Whether token.json was found.
+            token_valid  (bool): Token is not expired (or can be refreshed).
+            token_expired (bool): Access token has passed its expiry time.
+            has_refresh  (bool): A refresh_token is present.
+            expiry_str   (str):  Human-readable expiry datetime string.
+    """
+    # Mirrors the search paths used by CloudManager.initialize()
+    user_dir = dist_utils.get_user_data_dir()
+    root_dir = dist_utils.get_project_root()
+    
+    possible_paths = [
+        dist_utils.get_token_path(),   # secrets folder
+        user_dir / "token.json",
+        root_dir / "token.json",
+        user_dir / "backend" / "token.json",
+        root_dir / "backend" / "token.json",
+    ]
+
+    token_path = next((p for p in possible_paths if p.exists()), None)
+    if token_path is None:
+        return {
+            "token_exists": False, "token_valid": False,
+            "token_expired": True, "has_refresh": False,
+            "expiry_str": "N/A",
+        }
+
+    try:
+        import json
+        data = json.loads(token_path.read_text(encoding="utf-8"))
+        has_refresh = bool(data.get("refresh_token"))
+        expiry_raw = data.get("expiry") or data.get("token_expiry")
+        expired = True
+        expiry_str = "Unknown"
+        if expiry_raw:
+            try:
+                expiry_dt = datetime.fromisoformat(expiry_raw.replace("Z", "+00:00"))
+                now = datetime.now(timezone.utc)
+                expired = expiry_dt <= now
+                expiry_str = expiry_dt.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+            except Exception:
+                expiry_str = expiry_raw
+        return {
+            "token_exists": True,
+            "token_valid": (not expired) or has_refresh,
+            "token_expired": expired,
+            "has_refresh": has_refresh,
+            "expiry_str": expiry_str,
+        }
+    except Exception as e:
+        return {
+            "token_exists": True, "token_valid": False,
+            "token_expired": True, "has_refresh": False,
+            "expiry_str": f"Error: {e}",
+        }

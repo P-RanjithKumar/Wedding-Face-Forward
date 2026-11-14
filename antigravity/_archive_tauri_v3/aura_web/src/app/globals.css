@@ -1,0 +1,445 @@
+/* ============================================================
+   AURA — Admin Dashboard v5.0 (Dark/Light Mode)
+   Tailwind CSS v4 compatible — Premium Windows Desktop App
+   ============================================================ */
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-accent-primary: #10b981;
+  --color-accent-cyan: #0ea5e9;
+  --color-accent-rose: #f43f5e;
+}
+
+/* ============================================================
+   Design Tokens - Thematic System
+   ============================================================ */
+
+:root {
+  /* Common Gradient Tokens (Premium Grey System) */
+  /* LIGHT THEME VARIABLES */
+  --bg-card: #ffffff;
+  --bg-elevated: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --card-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  --icon-bg: #ffffff;
+  --icon-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --divider: rgba(0, 0, 0, 0.05);
+  --bg-inner: rgba(0, 0, 0, 0.03);
+  --bg-log-item: #f8fafc;
+
+  --acrylic-bg: rgba(255, 255, 255, 0.45);
+  --acrylic-border: rgba(255, 255, 255, 0.6);
+  --acrylic-noise: 0.03;
+
+  --sidebar-width: 80px;
+  --magic-smoke-rgb: 0, 0, 0;
+}
+
+.dark {
+  /* DARK THEME VARIABLES — Deep, Solid Premium Black */
+  --bg-card: #0f0f10;
+  --bg-elevated: #1a1a1c;
+  --bg-surface: #050505;
+  
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #71717a;
+  --text-muted: #52525b;
+  --text-inverse: #000000;
+
+  --acrylic-bg: rgba(15, 15, 16, 0.6);
+  --acrylic-border: rgba(255, 255, 255, 0.08);
+  --acrylic-noise: 0.05;
+
+  --card-shadow: 0 0 20px rgba(255, 255, 255, 0.05), 0 1px 3px rgba(255, 255, 255, 0.1);
+  --icon-bg: #1a1a1c;
+  --icon-shadow: 0 0 12px rgba(255, 255, 255, 0.08);
+  --divider: rgba(255, 255, 255, 0.03);
+  --bg-inner: #0a0a0b;
+  --bg-log-item: #1d1d1f;
+  --magic-smoke-rgb: 255, 255, 255;
+}
+
+/* ============================================================
+   Global Styles
+   ============================================================ */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dashboard-theme {
+  background: linear-gradient(180deg, var(--dash-bg-top) 0%, var(--dash-bg-mid) 45%, var(--dash-bg-bottom) 100%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  transition: background 0.8s ease-in-out;
+}
+
+.dash-card, .card-base {
+  background: var(--bg-card) !important;
+  border-radius: 20px;
+  box-shadow: var(--card-shadow);
+  border: none !important;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+}
+
+.icon-circle {
+  width: 40px;
+  height: 40px;
+  background: var(--icon-bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--icon-shadow);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none !important;
+  color: var(--text-primary);
+  backdrop-filter: blur(8px);
+}
+
+.icon-circle:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--icon-shadow);
+  filter: brightness(1.1);
+}
+
+/* Layout Elements */
+.sidebar-container {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* Typography Helpers */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+
+/* Global Button Fix */
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* UI Components */
+.btn-desktop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-weight: 700;
+  background: var(--bg-card);
+  box-shadow: var(--icon-shadow);
+  transition: all 0.2s ease;
+  border: none;
+  color: var(--text-primary);
+  backdrop-filter: blur(10px);
+}
+
+.input-desktop {
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Badge System */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.badge-success { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.badge-info { background: rgba(14, 165, 233, 0.2); color: #0ea5e9; }
+.badge-danger { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+
+/* Scrollbar Style */
+.scrollbar-premium::-webkit-scrollbar {
+  width: 5px;
+}
+.scrollbar-premium::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-premium::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 10px;
+  opacity: 0.3;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* ============================================================
+   POSSESSED DARK MAGIC SMOKE — 7-Layer Chaos System
+   ============================================================ */
+
+/* --- Keyframes: 7 unique smoke tendrils with drift & wobble --- */
+@keyframes smoke-spin-cw-fast {
+  0%   { transform: rotate(0deg)   scaleX(1)    scaleY(1); }
+  20%  { transform: rotate(72deg)  scaleX(1.04) scaleY(0.96); }
+  50%  { transform: rotate(180deg) scaleX(0.97) scaleY(1.06); }
+  80%  { transform: rotate(288deg) scaleX(1.03) scaleY(0.98); }
+  100% { transform: rotate(360deg) scaleX(1)    scaleY(1); }
+}
+
+@keyframes smoke-spin-ccw-mid {
+  0%   { transform: rotate(360deg) scaleX(1)    scaleY(1); }
+  33%  { transform: rotate(240deg) scaleX(0.95) scaleY(1.07); }
+  66%  { transform: rotate(120deg) scaleX(1.06) scaleY(0.93); }
+  100% { transform: rotate(0deg)   scaleX(1)    scaleY(1); }
+}
+
+@keyframes smoke-spin-cw-slow {
+  0%   { transform: rotate(90deg)  scale(1); }
+  50%  { transform: rotate(270deg) scale(1.09); }
+  100% { transform: rotate(450deg) scale(1); }
+}
+
+@keyframes smoke-drift-a {
+  0%,100% { transform: rotate(15deg)  translate(2px, -1px)  scale(1.0); }
+  25%     { transform: rotate(105deg) translate(-1px, 3px)  scale(0.93); }
+  50%     { transform: rotate(195deg) translate(-3px, -2px) scale(1.08); }
+  75%     { transform: rotate(285deg) translate(1px,  2px)  scale(0.96); }
+}
+
+@keyframes smoke-drift-b {
+  0%,100% { transform: rotate(200deg) translate(-2px, 1px)  scale(1.0); }
+  30%     { transform: rotate(80deg)  translate(3px, -2px)  scale(1.07); }
+  60%     { transform: rotate(320deg) translate(-1px, -3px) scale(0.92); }
+}
+
+@keyframes smoke-pulse-core {
+  0%,100% { opacity: 0.55; transform: scale(0.88); }
+  40%     { opacity: 0.85; transform: scale(1.0); }
+  70%     { opacity: 0.65; transform: scale(0.95); }
+}
+
+@keyframes smoke-underflow {
+  0%   { transform: rotate(0deg)   scale(1.1); opacity: 0.2; }
+  50%  { transform: rotate(180deg) scale(0.9); opacity: 0.4; }
+  100% { transform: rotate(360deg) scale(1.1); opacity: 0.2; }
+}
+
+@keyframes smoke-wisp-float {
+  0%,100% { transform: rotate(340deg) translate(1px,-2px) scale(1); opacity: 0.5; }
+  50%     { transform: rotate(160deg) translate(-2px,1px) scale(1.1); opacity: 0.9; }
+}
+
+/* --- Wrapper --- */
+.aurora-ghost-smoke {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px; /* Shrunk from 72px */
+  height: 50px;
+  margin-top: -25px;
+  margin-left: -25px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* LAYER 1: Dark smoky base mass — slow rotating shroud */
+.smoke-l1 {
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(0,0,0,0) 0%,
+    rgba(var(--magic-smoke-rgb), 0.12) 8%,
+    rgba(0,0,0,0) 20%,
+    rgba(var(--magic-smoke-rgb), 0.18) 32%,
+    rgba(0,0,0,0) 50%,
+    rgba(var(--magic-smoke-rgb), 0.1) 65%,
+    rgba(0,0,0,0) 80%,
+    rgba(0,0,0,0) 100%
+  );
+  filter: blur(6px);
+  animation: smoke-spin-cw-slow 8s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+/* LAYER 2: The primary tendril — fast, bright, aggressive */
+.smoke-l2 {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 60deg,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 28%,
+    rgba(var(--magic-smoke-rgb), 0.95) 38%,
+    rgba(var(--magic-smoke-rgb), 0.6)  43%,
+    rgba(var(--magic-smoke-rgb), 0.85) 50%,
+    rgba(0,0,0,0) 62%,
+    rgba(0,0,0,0) 100%
+  );
+  filter: blur(3px);
+  animation: smoke-spin-cw-fast 3.2s linear infinite;
+  opacity: 0.9;
+  mix-blend-mode: inherit;
+}
+
+/* LAYER 3: Counter-tendril — mid speed, opposite direction, dark teal */
+.smoke-l3 {
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 220deg,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 30%,
+    rgba(var(--magic-smoke-rgb), 0.8)  42%,
+    rgba(var(--magic-smoke-rgb), 0.5) 50%,
+    rgba(var(--magic-smoke-rgb), 0.7)  58%,
+    rgba(0,0,0,0) 72%,
+    rgba(0,0,0,0) 100%
+  );
+  filter: blur(5px);
+  animation: smoke-spin-ccw-mid 5.5s linear infinite;
+  opacity: 0.85;
+}
+
+/* LAYER 4: Drifting ghost wisp A — erratic translate drift */
+.smoke-l4 {
+  position: absolute;
+  inset: -2px;
+  border-radius: 46%;
+  background: conic-gradient(
+    from 135deg,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 40%,
+    rgba(var(--magic-smoke-rgb), 0.45) 50%,
+    rgba(0,0,0,0) 60%,
+    rgba(0,0,0,0) 100%
+  );
+  filter: blur(8px);
+  animation: smoke-drift-a 7.3s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+/* LAYER 5: Drifting ghost wisp B — different phase, dark underside */
+.smoke-l5 {
+  position: absolute;
+  inset: -3px;
+  border-radius: 42%;
+  background: conic-gradient(
+    from 310deg,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 38%,
+    rgba(var(--magic-smoke-rgb), 0.9)   48%,
+    rgba(var(--magic-smoke-rgb), 0.5) 55%,
+    rgba(0,0,0,0) 65%,
+    rgba(0,0,0,0) 100%
+  );
+  filter: blur(7px);
+  animation: smoke-drift-b 9s ease-in-out infinite;
+  opacity: 0.8;
+}
+
+/* LAYER 6: Core volumetric glow — the "possessed heart" */
+.smoke-l6 {
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(var(--magic-smoke-rgb), 0.35) 0%,
+    rgba(var(--magic-smoke-rgb), 0.15) 45%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  filter: blur(4px);
+  animation: smoke-pulse-core 2.8s ease-in-out infinite;
+}
+
+/* LAYER 7: Deep shadow underflow — the dark veil beneath everything */
+.smoke-l7 {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 60%,
+    rgba(var(--magic-smoke-rgb), 0.7) 0%,
+    rgba(var(--magic-smoke-rgb), 0.3) 40%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  filter: blur(10px);
+  animation: smoke-underflow 6s linear infinite;
+}
+
+/* Floating accent wisp — tiny, fast, barely visible, like escaping smoke */
+.smoke-wisp {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 45deg,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 45%,
+    rgba(var(--magic-smoke-rgb), 0.4) 50%,
+    rgba(0,0,0,0) 55%,
+    rgba(0,0,0,0) 100%
+  );
+  filter: blur(2px);
+  animation: smoke-wisp-float 4.1s ease-in-out infinite;
+}
+
+/* ============================================================
+   Acrylic Glassmorphism / Mica System
+   ============================================================ */
+.acrylic-surface {
+  position: absolute;
+  inset: 12px;
+  border-radius: 24px;
+  background: var(--acrylic-bg);
+  backdrop-filter: blur(32px) saturate(140%);
+  -webkit-backdrop-filter: blur(32px) saturate(140%);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Subtle noise texture to prevent banding and add physical realism */
+.acrylic-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: var(--acrylic-noise);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}

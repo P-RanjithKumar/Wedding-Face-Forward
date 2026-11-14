@@ -1,0 +1,53 @@
+AURA APPLICATION - CLICKABLE ELEMENTS INVENTORY
+================================================
+
+1. GLOBAL NAVIGATION (Sidebar)
+------------------------------
+- [Link] AURA Logo: Returns to Dashboard Page.
+- [Link] Dashboard: /
+- [Link] People: /people
+- [Link] Processing: /processing
+- [Link] Cloud Sync: /cloud
+- [Link] WhatsApp: /whatsapp
+- [Link] Health: /health
+- [Link] Settings: /settings
+
+2. GLOBAL HEADER TOOLS
+----------------------
+- [Button] Color Palette Toggle: Opens the Background Gradient Lab.
+- [Buttons] Individual Color Presets: Sets the application-wide gradient background.
+- [Button] Theme Toggle: Switches between Light and Dark mode.
+- [Button] Google Re-authentication: Triggers authentication flow if session expires.
+- [Button] Master Process Switch: Global toggle for active backend processing.
+
+3. WHATSAPP MODULE
+------------------
+- [Button] Primary Process Control: Pill-shaped toggle for "Start Process" / "Stop Process".
+  - Features: Border glow, All-around shadow, responsive theme background.
+
+4. DASHBOARD & ACTIVITY
+-----------------------
+- [Cards] Metric Grid: Clickable cards for Photos, Faces, Persons, and Enrolled stats.
+- [Button] Clear Logs: Red button at the top of Activity Log to purge entries.
+- [Button] Auto-Scroll Nudge: Floating blue button to "Scroll to latest" log messages.
+
+5. PEOPLE & CLUSTERING
+----------------------
+- [Button] Enrollment Filter: Toggles between "All People" and "Enrolled Only".
+- [Cards] Person Thumbnails: Clickable cards to focus on individual guest data.
+
+6. SYSTEM HEALTH
+----------------
+- [Button] Reset Stuck Jobs: Amber action button to clear hung worker items.
+- [Button] Trigger Self-Heal: Starts automated system maintenance and repair tasks.
+
+7. SETTINGS & CONFIGURATION
+---------------------------
+- [Buttons] Feature Toggles: Small switches to enable/disable system features.
+- [Button] Save Changes: Floating primary action button to persist settings.
+- [Link/Buttons] Section Navigation: Sidebar items to jump to specific setting groups.
+- [Button] Force Reload: System refresh button.
+
+================================================
+Generated: 2026-03-14
+Aesthetics: Premium DARK theme optimized.
