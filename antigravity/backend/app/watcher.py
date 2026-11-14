@@ -192,6 +192,10 @@ class DirectoryScanner(Thread):
                 # Create photo record and enqueue
                 photo_id = db.create_photo(file_hash, str(file_path))
                 self.job_queue.put((photo_id, file_path, file_hash))
+                # Count it like _enqueue_file does (the log showed "17/16"
+                # because scanner-found photos were never counted)
+                from .worker import progress
+                progress.on_enqueue()
                 enqueued += 1
                 logger.info(f"Scanner found: {file_path.name} (ID: {photo_id})")
                 

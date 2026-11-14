@@ -17,6 +17,23 @@ Stale docs to update: `README.md` (still PySide-era) and `infos/project_structur
 
 ## START HERE: current status and handoff (2026-11-14)
 
+**What is left (updated 2026-11-14, end of day; details further down)**
+
+*Owner (only you can do these):*
+1. Test locally with `HOW_TO_TEST_LOCALLY.md` (installer, offline, face grouping, selfie on laptop and phone). Note how often people are split or mixed up.
+2. Re-sign in to Google Drive (your March sign-in is dead), and in Google Cloud Console switch the scope to `drive.file` and publish the app (`infos/GOOGLE_DRIVE_SETUP.md`).
+3. Clean-PC test (step 5 checklist), ideally also on a PC with an NVIDIA card. Then merge branch `aura-v2-fixes` into `main`.
+4. Delete when no longer needed: `Output\WeddingFaceForward_Setup_1.0.x.exe` (contain old secrets) and `%LOCALAPPDATA%\AURA_old_2026-03` (March test data incl. old sign-in/key; renamed out of the way on 2026-11-14 so the new install starts fresh).
+5. Optional: buy a code-signing certificate to remove the "Windows protected your PC" warning.
+
+*Verified 2026-11-14 night:* the built app works fully offline. `dev_checks/offline_batch.py` (no Drive, fresh install): 40 photos in 33 s incl. the speed test, 240 faces -> exactly the right 6 people, upload queue empty. Identical files are skipped as duplicates (by design). Fixed since that build (in the next installer): the periodic folder scanner did not count photos in the progress counter (log showed "17/16"); display only.
+
+*Next for Claude, best done with your real event photos (results from item 1):*
+- Face quality filters (skip tiny/blurry background faces that create junk "people"); stricter selfie match threshold; reject selfies with several faces; show the top 2-3 candidates; suggest merges for near-duplicate people.
+- Merging two people should also merge their Google Drive folders.
+
+*Later / product:* guest page from anywhere (tunnel, HTTPS), WhatsApp Business API, several events with separate folders, ZIP export of a gallery, consent text + "delete my data", code cleanup (`checker_scripts/`, bare `except:`), CI that runs the tests and builds the installer.
+
 **State of the project**
 - Active app: PySide6 v2.0.0. Run with `python run_pyside.py` from `antigravity/`. It was launched this session and the owner confirmed it works (intro video plays, dashboard opens). It uses the real `.env` and `EventRoot` (1.1 GB of photos).
 - The PySide6 app is also what GitHub HEAD contains (`0696daf`, 19 commits). The Tauri + Next.js rewrite was never pushed and is archived in `_archive_tauri_v3/` (moved, not deleted; the owner may delete it).
@@ -140,7 +157,8 @@ Stale docs to update: `README.md` (still PySide-era) and `infos/project_structur
    - **WhatsApp fallback: "Share Links" menu** (`aura_app/widgets/share_links_dialog.py`): every guest with a phone number, the automatic sender's status, and per guest **Open WhatsApp** (wa.me link with the message filled in; you press Send), **Copy message**, **QR** (scan on the spot). Link = the guest's Drive folder when Drive is connected (shared publicly, same as the sender), else a **direct gallery link** to the guest page. New: `backend/app/gallery_access.py` (gallery keys shared by server and desktop app), `/api/gallery/{id}/info`, guest page opens `/?g=<id>&k=<key>` straight into that guest's gallery without asking for the camera (bad link -> normal selfie flow). Tested (`dev_checks/test_share.py`, 13/13): endpoint keys, direct link in a phone browser over plain http, broken link fallback, the window's list/status, wa.me URL with digits and message, copy, link validity.
    - **Test scripts kept in the project:** `dev_checks/` (smoke test of the built app, step tests, reliability, share links, compute, benchmark) with a README; the `<scratchpad>` paths mentioned above refer to these.
    - All suites re-run after these changes: backend 36/36, step 2/3/3b/4, reliability, compute with real models + DirectML: pass.
-   - **Git:** see "Warnings" (updated) for the branch.
+   - **Git:** see "Warnings" (updated) for the branch. The commit was rewritten without the Claude co-author line at the owner's request (now `990e280`, same files) and force-pushed; future commits show only the owner.
+   - **Final installer: `Output\AURA_Setup_2.0.0.exe`, 2026-11-14 23:30, SHA-256 starts `869ddf679dd0b8b0`**, includes steps 1-8. Smoke test of the built exe: all checks pass (speed test chose the graphics card, 382 ms vs CPU 801 ms per photo). This replaces the 22:46 build mentioned in step 7.
 
 **Docs map**
 - `infos/GOOGLE_DRIVE_SETUP.md`: how Drive sign-in works, what users see, the owner's one-time Google Cloud setup, the `drive` vs `drive.file` decision, troubleshooting. (Added 2026-11-14.)
