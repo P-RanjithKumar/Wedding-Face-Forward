@@ -23,6 +23,7 @@ Google Drive and WhatsApp stay off; messages about them being "not connected" ar
    **Intel Arc graphics card** will do the face matching. Click **Next**.
 4. **Step 4, Google Drive:** do **not** connect. Just click **Next**.
 5. **Step 5, guests' link:** note the link (like `http://192.168.1.9:8000`). Click **Next**, then **Finish**.
+   The link and QR code **only work after you press START** (Part 3). Scanning it now shows nothing; that is expected.
 
 ## Part 3: Process photos
 
@@ -82,7 +83,7 @@ What to check:
 | "Windows protected your PC" | More info, then Run anyway (expected until the installer is signed) |
 | "Google Drive is not connected" / "Uploads are OFF" | Expected in this local test, ignore |
 | No people appear | Check the photos are in `Pictures\AURA\Incoming` and START was pressed; wait 1 minute (first run does the speed test) |
-| Guest page does not open on the phone | Same Wi-Fi? Allowed AURA in the Windows Firewall prompt? Is processing running? |
+| Guest page does not open on the phone | 1) Is processing running (STOP button visible)? The link only works then. 2) Same Wi-Fi, mobile data off? 3) Test `http://<laptop IP>:8000/api/health` on the phone: "healthy" = network OK. 4) Allowed AURA in the Windows Firewall prompt? |
 | Anything else | Menu **Export Logs**, send the ZIP from your Desktop |
 
 ## Testing from the source code instead (developer way)

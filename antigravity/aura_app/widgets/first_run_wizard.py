@@ -22,7 +22,7 @@ import socket
 import threading
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal, QObject
+from PySide6.QtCore import Qt, Signal, QObject, QTimer
 from PySide6.QtGui import QFont, QPixmap, QGuiApplication
 from PySide6.QtWidgets import (
     QDialog, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout,
@@ -59,6 +59,18 @@ def guest_url() -> str:
     started (first free from 8000, see dist_utils.pick_guest_port)."""
     import dist_utils
     return f"http://{lan_ip()}:{dist_utils.get_guest_port()}"
+
+
+def guest_page_running(timeout: float = 0.4) -> bool:
+    """True if the guest web server answers on this PC right now."""
+    import urllib.request
+    import dist_utils
+    try:
+        url = f"http://127.0.0.1:{dist_utils.get_guest_port()}/api/health"
+        with urllib.request.urlopen(url, timeout=timeout) as r:
+            return r.status == 200
+    except Exception:
+        return False
 
 
 def qr_pixmap(text: str, scale: int = 7) -> QPixmap:
@@ -241,6 +253,15 @@ class FirstRunWizard(QDialog):
         guest_col.addWidget(self._text("Guests open this on their phone:"))
         guest_col.addWidget(self._url_label)
         guest_col.addWidget(copy, 0, Qt.AlignmentFlag.AlignLeft)
+        # Live status: the link only works while processing runs (START).
+        # Owner scanned the QR during setup, before START, and it "didn't
+        # work" (2026-11-14), so say it plainly here.
+        self._guest_status = QLabel()
+        self._guest_status.setWordWrap(True)
+        guest_col.addWidget(self._guest_status)
+        self._guest_timer = QTimer(self)
+        self._guest_timer.setInterval(2000)
+        self._guest_timer.timeout.connect(self._refresh_guest_status)
         guest_col.addWidget(self._text(
             "• Phones must be on the same Wi-Fi as this computer.\n"
             "• Processing must be running (Start button on the dashboard).\n"
@@ -292,6 +313,11 @@ class FirstRunWizard(QDialog):
             self._start_speed_check()
         if index == 3:
             self._refresh_drive_status()
+        if index == 4:
+            self._refresh_guest_status()
+            self._guest_timer.start()
+        else:
+            self._guest_timer.stop()
 
     def _next(self):
         index = self._stack.currentIndex()
@@ -367,6 +393,15 @@ class FirstRunWizard(QDialog):
         if info["gpus"]:
             detail += f"\nGraphics found: {', '.join(info['gpus'])}"
         self._speed_detail.setText(detail + "\nYou can change this in Settings > Processing Speed.")
+
+    def _refresh_guest_status(self):
+        if guest_page_running():
+            text, colour = ("🟢  Guest page is ON: phones on this Wi-Fi can open the link now.", c('success', self._mode))
+        else:
+            text, colour = ("🟠  Guest page is OFF right now. Finish this setup and press START on the dashboard; "
+                            "the link and QR code work while processing is running.", c('warning', self._mode))
+        self._guest_status.setText(text)
+        self._guest_status.setStyleSheet(f"color: {colour}; font-size: 13px; font-weight: bold;")
 
     def _refresh_drive_status(self):
         try:

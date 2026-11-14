@@ -28,6 +28,9 @@ Stale docs to update: `README.md` (still PySide-era) and `infos/project_structur
 
 *Verified 2026-11-14 night:* the built app works fully offline. `dev_checks/offline_batch.py` (no Drive, fresh install): 40 photos in 33 s incl. the speed test, 240 faces -> exactly the right 6 people, upload queue empty. Identical files are skipped as duplicates (by design). Fixed since that build (in the next installer): the periodic folder scanner did not count photos in the progress counter (log showed "17/16"); display only.
 
+*Owner feedback 2026-11-14:* local test of the installed app: photo recognition is "very fast compared to previous version". (Grouping accuracy on real photos: not reported yet.)
+*Owner feedback 2026-11-14:* guest QR link "didn't work" on a Samsung (Android) phone. Diagnosed: network, firewall (Windows Firewall; the McAfee firewall entry is a stale registration, no McAfee installed) and server were fine (phone reached `/api/health`); the QR had been scanned during setup, before START, when the guest server does not run. Works after START. Fix: the setup guide's guest step now shows a live "Guest page is ON / OFF, press START" line (checked every 2 s); test guide updated. Idea for later: start the guest page together with the app instead of with processing.
+
 *Next for Claude, best done with your real event photos (results from item 1):*
 - Face quality filters (skip tiny/blurry background faces that create junk "people"); stricter selfie match threshold; reject selfies with several faces; show the top 2-3 candidates; suggest merges for near-duplicate people.
 - Merging two people should also merge their Google Drive folders.
