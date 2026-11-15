@@ -40,6 +40,8 @@ Stale docs to update: `README.md` (still PySide-era) and `infos/project_structur
 
 *2026-11-15:* one script for testing, building and the installer: `build_and_test.ps1` (or double-click `build_and_test.bat`); options `-TestsOnly`, `-SkipTests`, `-Clean`, `-FullCheck`. It checks prerequisites (Python packages incl. onnxruntime-directml, Inno Setup, the sign-in client in AURA-secrets), runs the backend unit tests and all `dev_checks`, builds with PyInstaller, runs the built-app check offline, compiles the installer in a temp folder (avoids the antivirus error) and moves it to `Output\`. Stops at the first failure and shows the log tail. Logs: `logs\build\<date-time>\`. The dev checks were made independent of port 8000 so they run while the installed AURA is open. The owner's guest page redesign (from another Claude session) was committed; consent box back to ticked by default.
 
+*Current installer (2026-11-15 00:51, made with `build_and_test.ps1`, ALL DONE in 22 min):* `Output\AURA_Setup_2.0.0.exe`, 640 MB, SHA-256 starts `7e5e165bab70b40f`. Contains everything above plus the guest page redesign with the consent box ticked by default (verified: built app has the same guest page files as the source). All tests, the built-app check (speed test chose the graphics card, 192 ms vs CPU 321 ms) and the installer step passed. Logs: `logs\build\2026-11-15_00-29\`.
+
 *Next for Claude, best done with your real event photos (results from item 1):*
 - Face quality filters (skip tiny/blurry background faces that create junk "people"); stricter selfie match threshold; reject selfies with several faces; show the top 2-3 candidates; suggest merges for near-duplicate people.
 - Merging two people should also merge their Google Drive folders.
