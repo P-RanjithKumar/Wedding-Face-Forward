@@ -74,6 +74,8 @@ with sync_playwright() as pw:
     page.click("#nextBtn")
     page.fill("#userName", "Test Guest")
     page.fill("#userPhone", "9876543210")
+    if not page.is_checked("#consent"):   # unticked by default since the 2026-11-15 redesign
+        page.check("#consent")
     page.click("#submitBtn")
     page.wait_for_selector("#resultsModal:not(.hidden)", timeout=15000)
     check("A: enrollment succeeded", page.is_visible("#resultSuccess"))

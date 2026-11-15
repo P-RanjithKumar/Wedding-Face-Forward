@@ -105,6 +105,22 @@ The system uses **InsightFace's Buffalo_L** model powered by **ONNX Runtime**. I
 
 ## 📦 Installation & Setup
 
+### Build and test in one go
+
+From the `antigravity` folder, double-click **`build_and_test.bat`**, or run:
+
+```powershell
+.\build_and_test.ps1               # tests, build, built-app check, installer (about 30 min)
+.\build_and_test.ps1 -TestsOnly    # only the tests (about 5 min)
+.\build_and_test.ps1 -SkipTests    # build + built-app check + installer
+.\build_and_test.ps1 -Clean        # build from scratch (after changing Python packages)
+.\build_and_test.ps1 -FullCheck    # also test the WhatsApp browser download (~150 MB)
+```
+
+The installer lands in `Output\AURA_Setup_<version>.exe`; logs of every step in `logs\build\<date-time>\`.
+Tests use temporary folders and their own ports, so they are safe to run while AURA is open.
+How to try the installed app: `HOW_TO_TEST_LOCALLY.md`.
+
 ### 1. Repository Setup
 
 ```powershell

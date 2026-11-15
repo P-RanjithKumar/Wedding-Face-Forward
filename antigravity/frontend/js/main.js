@@ -166,8 +166,8 @@ const Elements = {
 function init() {
     setupEventListeners();
     openGalleryFromLink();
-    setupAnimations();
-    animateStatsOnLoad();
+    setupSwipe();
+    loadStats();
 }
 
 
@@ -175,8 +175,12 @@ function init() {
 // Event Listeners
 // ============================================================
 function setupEventListeners() {
-    // Navbar scroll effect
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Phone Back button closes the viewer first, then the gallery
+    window.addEventListener('popstate', () => {
+        if (lightboxOpen()) hideLightbox();
+        else if (Elements.gallerySection && !Elements.gallerySection.classList.contains('hidden')) closeGallery();
+    });
+    if (Elements.downloadBtn) Elements.downloadBtn.addEventListener('click', savePhoto);
 
     // Camera actions
     if (Elements.captureBtn) Elements.captureBtn.addEventListener('click', capturePhoto);
@@ -205,7 +209,8 @@ function setupEventListeners() {
     if (Elements.backToHome) {
         Elements.backToHome.addEventListener('click', (e) => {
             e.preventDefault();
-            closeGallery();
+            if (history.state && history.state.gallery) history.back();   // popstate closes it
+            else closeGallery();
         });
     }
 
@@ -231,103 +236,14 @@ function setupEventListeners() {
 
 
 // ============================================================
-// Scroll-driven Animations
-// ============================================================
-function setupAnimations() {
-    setupRevealAnimations();
-    setupFeatureCardAnimations();
-}
-
-function setupRevealAnimations() {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-            }
-        });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.reveal-text, .hero-subtitle, .hero-actions').forEach(el => {
-        observer.observe(el);
-    });
-}
-
-function setupFeatureCardAnimations() {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
-            if (entry.isIntersecting) {
-                entry.target.style.transitionDelay = `${index * 100}ms`;
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, { threshold: 0.15 });
-
-    document.querySelectorAll('.feature-card').forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
-        observer.observe(card);
-    });
-}
-
-
-// ============================================================
-// Navbar
-// ============================================================
-function handleScroll() {
-    const scrolled = window.scrollY > 10;
-    if (Elements.navbar) {
-        Elements.navbar.classList.toggle('scrolled', scrolled);
-    }
-}
-
-
-// ============================================================
-// Stats
+// Event line (photos sorted so far)
 // ============================================================
 async function loadStats() {
     const stats = await API.getStats();
-    if (stats) {
-        if (Elements.statPhotos) animateNumber(Elements.statPhotos, stats.total_photos || 0);
-        if (Elements.statGuests) animateNumber(Elements.statGuests, stats.total_enrolled || 0);
-        if (Elements.statFaces) animateNumber(Elements.statFaces, stats.total_faces || 0);
-    }
-}
-
-function animateNumber(element, target) {
-    const duration = 1800;
-    const startTime = performance.now();
-
-    function update(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        const current = Math.round(target * easeOut);
-
-        element.textContent = current.toLocaleString();
-
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        }
-    }
-
-    requestAnimationFrame(update);
-}
-
-function animateStatsOnLoad() {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                loadStats();
-                observer.disconnect();
-            }
-        });
-    }, { threshold: 0.5 });
-
-    const statsContainer = document.querySelector('.hero-stats');
-    if (statsContainer) {
-        observer.observe(statsContainer);
+    const line = document.getElementById('eventLine');
+    if (stats && stats.total_photos > 0 && Elements.statPhotos) {
+        Elements.statPhotos.textContent = Number(stats.total_photos).toLocaleString();
+        if (line) line.classList.remove('hidden');
     }
 }
 
@@ -384,8 +300,8 @@ async function startCamera() {
         const stream = await navigator.mediaDevices.getUserMedia({
             video: {
                 facingMode: 'user',
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
+                width: { ideal: 1080 },
+                height: { ideal: 1440 }
             },
             audio: false
         });
@@ -413,6 +329,7 @@ function showSelfiePreview(file, previewUrl) {
     if (Elements.selfiePreview) Elements.selfiePreview.src = previewUrl;
     setCameraMode('preview');
     State.stopVideoStream();
+    if (Elements.nextBtn) Elements.nextBtn.disabled = false;
 }
 
 function capturePhoto() {
@@ -487,6 +404,7 @@ async function handleSelfieFile(e) {
 
 function retakePhoto() {
     State.selfieFile = null;
+    if (Elements.nextBtn) Elements.nextBtn.disabled = true;
     if (State.cameraSupported === false) {
         // No live camera: go straight back to the phone camera / picker
         setCameraMode('unavailable');
@@ -533,6 +451,9 @@ function showStep(step) {
     if (Elements.nextBtn) Elements.nextBtn.classList.toggle('hidden', step === 2);
     if (Elements.submitBtn) Elements.submitBtn.classList.toggle('hidden', step !== 2);
 
+    window.scrollTo(0, 0);
+    if (step === 2 && Elements.userName) Elements.userName.focus({ preventScroll: true });
+
     if (step === 1 && !State.selfieFile) {
         startCamera();
     } else {
@@ -563,8 +484,9 @@ async function handleSubmit(e) {
         return;
     }
 
-    if (!Elements.userPhone.value.trim()) {
-        showToast('Please enter your phone number', 'error');
+    const phoneDigits = Elements.userPhone.value.replace(/\D/g, '');
+    if (phoneDigits.length < 6 || phoneDigits.length > 15) {
+        showToast('Please enter a valid phone number', 'error');
         Elements.userPhone.focus();
         return;
     }
@@ -609,7 +531,7 @@ async function handleSubmit(e) {
 function showSuccessModal(result) {
     State.enrolledUser = result;
 
-    if (Elements.matchMessage) Elements.matchMessage.textContent = `Welcome, ${result.person_name}! Your photos are ready.`;
+    if (Elements.matchMessage) Elements.matchMessage.textContent = `${result.person_name}, your photos are ready.`;
     if (Elements.soloCount) Elements.soloCount.textContent = result.solo_count || 0;
     if (Elements.groupCount) Elements.groupCount.textContent = result.group_count || 0;
 
@@ -639,11 +561,8 @@ function handleTryAgain() {
     State.reset();
     showStep(1);
 
-    if (Elements.previewContent) Elements.previewContent.classList.add('hidden');
-    if (Elements.videoWrapper) Elements.videoWrapper.classList.remove('hidden');
-    if (Elements.cameraActions) Elements.cameraActions.classList.remove('hidden');
-    if (Elements.retakeActions) Elements.retakeActions.classList.add('hidden');
-    if (Elements.cameraView) Elements.cameraView.classList.remove('captured');
+    setCameraMode('live');
+    if (Elements.nextBtn) Elements.nextBtn.disabled = true;
 
     startCamera();
 
@@ -657,11 +576,11 @@ async function loadPreviewPhotos(user) {
 
         if (Elements.galleryPreview) {
             Elements.galleryPreview.innerHTML = preview.map(photo => `
-              <img src="${API.getThumbnailUrl(user, photo.path)}" alt="Photo preview" loading="lazy">
+              <img src="${API.getThumbnailUrl(user, photo.path)}" alt="" loading="lazy">
             `).join('');
 
             if (preview.length === 0) {
-                Elements.galleryPreview.innerHTML = '<p style="color: var(--text-tertiary); font-size: var(--text-sm);">Photos are being processed...</p>';
+                Elements.galleryPreview.innerHTML = '<p class="preview-note">Photos of you are still being sorted. Open your album in a few minutes.</p>';
             }
         }
     } catch (error) {
@@ -685,12 +604,14 @@ function openGallery(e) {
     if (Elements.enrollSection) Elements.enrollSection.classList.add('hidden');
     const footer = document.querySelector('.footer');
     if (footer) footer.classList.add('hidden');
+    document.getElementById('home')?.classList.add('hidden');
 
     if (Elements.gallerySection) Elements.gallerySection.classList.remove('hidden');
     if (Elements.galleryUserName) Elements.galleryUserName.textContent = State.enrolledUser.person_name;
 
     loadGalleryPhotos();
     window.scrollTo(0, 0);
+    history.pushState({ gallery: true }, '');   // phone Back returns to the start page
 }
 
 // Direct gallery links (?g=<person id>&k=<private key>), shared from the
@@ -727,6 +648,7 @@ function closeGallery() {
     if (Elements.enrollSection) Elements.enrollSection.classList.remove('hidden');
     const footer = document.querySelector('.footer');
     if (footer) footer.classList.remove('hidden');
+    document.getElementById('home')?.classList.remove('hidden');
 
     if (State.openedFromLink) {
         State.openedFromLink = false;
@@ -780,12 +702,9 @@ function renderGallery() {
 
     if (Elements.galleryGrid) {
         Elements.galleryGrid.innerHTML = photos.map((photo, index) => `
-        <div class="photo-card" data-index="${index}">
-          <img src="${API.getThumbnailUrl(State.enrolledUser, photo.path)}" alt="Photo" loading="lazy">
-          <div class="photo-overlay">
-            <span>View Full</span>
-          </div>
-        </div>
+        <button type="button" class="photo-card" data-index="${index}" aria-label="Open photo ${index + 1}">
+          <img src="${API.getThumbnailUrl(State.enrolledUser, photo.path)}" alt="" loading="lazy" decoding="async">
+        </button>
       `).join('');
 
         Elements.galleryGrid.querySelectorAll('.photo-card').forEach(card => {
@@ -799,39 +718,102 @@ function renderGallery() {
 
 
 // ============================================================
-// Lightbox
+// Photo viewer (swipe, back button, save)
 // ============================================================
+function lightboxOpen() {
+    return Elements.lightbox && !Elements.lightbox.classList.contains('hidden');
+}
+
 function openLightbox(index) {
     State.currentPhotoIndex = index;
     updateLightbox();
-    if (Elements.lightbox) Elements.lightbox.classList.remove('hidden');
+    Elements.lightbox.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    history.pushState({ lb: true }, '');   // phone Back closes the viewer
+}
+
+function hideLightbox() {
+    Elements.lightbox.classList.add('hidden');
+    Elements.lightboxImage.src = '';
+    document.body.style.overflow = '';
 }
 
 function closeLightbox() {
-    if (Elements.lightbox) Elements.lightbox.classList.add('hidden');
-    document.body.style.overflow = '';
+    if (history.state && history.state.lb) history.back();   // popstate hides it
+    else hideLightbox();
 }
 
 function navigateLightbox(direction) {
     const photos = State.galleryPhotos[State.currentGalleryTab] || [];
+    if (!photos.length) return;
     State.currentPhotoIndex = (State.currentPhotoIndex + direction + photos.length) % photos.length;
     updateLightbox();
 }
 
 function updateLightbox() {
     const photos = State.galleryPhotos[State.currentGalleryTab] || [];
-    const photo = photos[State.currentPhotoIndex];
-
+    const index = State.currentPhotoIndex;
+    const photo = photos[index];
     if (!photo) return;
 
-    if (Elements.lightboxImage) Elements.lightboxImage.src = API.getPhotoUrl(State.enrolledUser, photo.path);
-    if (Elements.lightboxCounter) Elements.lightboxCounter.textContent = `${State.currentPhotoIndex + 1} / ${photos.length}`;
+    // Show the small thumbnail instantly, swap in the full photo when it has loaded
+    const img = Elements.lightboxImage;
+    img.src = API.getThumbnailUrl(State.enrolledUser, photo.path);
+    const full = new Image();
+    full.onload = () => {
+        if (State.currentPhotoIndex === index && lightboxOpen()) img.src = full.src;
+    };
+    full.src = API.getPhotoUrl(State.enrolledUser, photo.path);
 
-    if (Elements.downloadBtn) {
-        Elements.downloadBtn.href = API.getPhotoUrl(State.enrolledUser, photo.path);
-        Elements.downloadBtn.download = photo.filename || 'photo.jpg';
+    if (Elements.lightboxCounter) Elements.lightboxCounter.textContent = `${index + 1} / ${photos.length}`;
+}
+
+async function savePhoto() {
+    const photos = State.galleryPhotos[State.currentGalleryTab] || [];
+    const photo = photos[State.currentPhotoIndex];
+    if (!photo) return;
+    const name = photo.filename || 'photo.jpg';
+    try {
+        const res = await fetch(API.getPhotoUrl(State.enrolledUser, photo.path));
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const blob = await res.blob();
+        const file = new File([blob], name, { type: blob.type || 'image/jpeg' });
+        // Share sheet lets people save straight to the phone's gallery (needs https)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file] });
+            return;
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    } catch (error) {
+        if (error && error.name === 'AbortError') return;   // person closed the share sheet
+        console.warn('Save failed:', error);
+        showToast('Could not save. Press and hold the photo instead.', 'error');
     }
+}
+
+function setupSwipe() {
+    const area = Elements.lightbox;
+    if (!area) return;
+    let x0 = 0, y0 = 0, tracking = false;
+    area.addEventListener('touchstart', (e) => {
+        tracking = e.touches.length === 1;   // two fingers = pinch zoom, ignore
+        x0 = e.touches[0].clientX;
+        y0 = e.touches[0].clientY;
+    }, { passive: true });
+    area.addEventListener('touchend', (e) => {
+        if (!tracking) return;
+        tracking = false;
+        const dx = e.changedTouches[0].clientX - x0;
+        const dy = e.changedTouches[0].clientY - y0;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) navigateLightbox(dx < 0 ? 1 : -1);
+        else if (dy > 110 && Math.abs(dy) > Math.abs(dx) * 1.5) closeLightbox();
+    }, { passive: true });
 }
 
 
@@ -854,82 +836,26 @@ function handleKeydown(e) {
 
 
 // ============================================================
-// Toast Notifications — Premium Dark Style
+// Toast
 // ============================================================
+let toastTimer;
 function showToast(message, type = 'info') {
-    // Remove existing toasts
-    document.querySelectorAll('.toast-notification').forEach(t => t.remove());
-
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-
-    const iconSvg = type === 'error' ? Icons.alertCircle
-        : type === 'success' ? Icons.check
-            : Icons.info;
-
-    const bgColor = type === 'error'
-        ? 'rgba(239, 68, 68, 0.15)'
-        : type === 'success'
-            ? 'rgba(34, 197, 94, 0.15)'
-            : 'rgba(6, 182, 212, 0.15)';
-
-    const borderColor = type === 'error'
-        ? 'rgba(239, 68, 68, 0.3)'
-        : type === 'success'
-            ? 'rgba(34, 197, 94, 0.3)'
-            : 'rgba(6, 182, 212, 0.3)';
-
-    const textColor = type === 'error'
-        ? '#FCA5A5'
-        : type === 'success'
-            ? '#86EFAC'
-            : '#67E8F9';
-
-    toast.innerHTML = `
-        <span class="toast-icon-wrap">${iconSvg}</span>
-        <span class="toast-msg">${message}</span>
-    `;
-
-    Object.assign(toast.style, {
-        position: 'fixed',
-        bottom: '24px',
-        right: '24px',
-        padding: '12px 20px',
-        background: bgColor,
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        border: `1px solid ${borderColor}`,
-        color: textColor,
-        borderRadius: '10px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        fontSize: '14px',
-        fontWeight: '500',
-        fontFamily: "'DM Sans', sans-serif",
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        zIndex: '9999',
-        transform: 'translateX(100%)',
-        opacity: '0',
-        transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease',
-    });
-
-    document.body.appendChild(toast);
-
-    // Animate in
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            toast.style.transform = 'translateX(0)';
-            toast.style.opacity = '1';
-        });
-    });
-
-    // Remove after delay
-    setTimeout(() => {
-        toast.style.transform = 'translateX(100%)';
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    let t = document.getElementById('toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        t.setAttribute('role', 'status');
+        t.setAttribute('aria-live', 'polite');
+        document.body.appendChild(t);
+    }
+    t.textContent = message;   // textContent: server messages are never treated as HTML
+    t.dataset.type = type;
+    t.classList.remove('show');
+    void t.offsetWidth;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
 

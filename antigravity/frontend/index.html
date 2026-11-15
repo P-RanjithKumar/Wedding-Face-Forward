@@ -3,425 +3,199 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description"
-    content="AURA by DARK intelligence - Find your photos instantly with AI face recognition. Capture every moment, share every smile.">
-  <title>AURA | Your Photos, Instantly</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
-  <link rel="stylesheet" href="./css/main.css?v=2026-11-14b">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3A1634">
+  <meta name="description" content="Take one selfie and find every photo you are in from the event.">
+  <title>Find your photos | AURA</title>
+  <link rel="stylesheet" href="./css/main.css?v=2026-11-15b">
 </head>
 
 <body>
 
-  <!-- Navigation -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-container">
-      <a href="#" class="nav-logo">
-        <span class="logo-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2a4.5 4.5 0 0 0 0 9 4.5 4.5 0 0 0 0-9"/><path d="M12 16.5A4.5 4.5 0 1 0 7.5 12 4.5 4.5 0 0 0 12 16.5"/><path d="M12 7.5A4.5 4.5 0 1 1 16.5 12 4.5 4.5 0 0 1 12 7.5"/><circle cx="12" cy="12" r="10"/></svg>
-        </span>
-        <span class="logo-text">AURA</span>
-      </a>
-      <div class="nav-links">
-        <a href="#features" class="nav-link">How It Works</a>
-        <a href="#enroll" class="nav-link nav-link-cta">Find My Photos</a>
-      </div>
+  <main class="app" id="home">
+
+    <header class="top" id="hero">
+      <span class="wordmark">AURA</span>
+      <h1 class="top-title">Find the photos you are in</h1>
+      <p class="top-sub">Take one selfie and we'll gather every photo of you from the event.</p>
+      <p class="event-line hidden" id="eventLine"><span id="stat-photos">0</span> photos sorted so far</p>
+    </header>
+
+    <div class="sheet" id="enroll">
+      <form class="enroll-form" id="enrollForm" novalidate>
+
+        <div class="form-progress" aria-label="Progress">
+          <div class="progress-step active" data-step="1"><span class="step-label">Selfie</span></div>
+          <div class="progress-step" data-step="2"><span class="step-label">Your details</span></div>
+        </div>
+
+        <!-- Step 1: selfie -->
+        <div class="form-step active" id="step-1">
+          <div class="camera-container" id="cameraArea">
+            <div class="camera-view-window" id="cameraView">
+              <div class="camera-stream-wrapper" id="videoWrapper">
+                <video id="cameraStream" autoplay playsinline muted></video>
+                <div class="camera-overlay" aria-hidden="true">
+                  <div class="camera-frame"></div>
+                </div>
+                <canvas id="captureCanvas" class="hidden"></canvas>
+              </div>
+
+              <div class="preview-content hidden" id="previewContent">
+                <img id="selfiePreview" alt="Your selfie">
+              </div>
+
+              <!-- Shown when the live camera can't run (phones on http:// venue Wi-Fi) -->
+              <div class="camera-unavailable hidden" id="cameraUnavailable">
+                <svg class="ico-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                <p id="cameraUnavailableText">Tap the button below to take a selfie with your phone's camera.</p>
+              </div>
+
+              <div class="camera-actions" id="cameraActions">
+                <button type="button" class="shutter" id="captureBtn" aria-label="Take selfie"></button>
+              </div>
+
+              <div class="retake-actions hidden" id="retakeActions">
+                <button type="button" class="btn btn-pill" id="retakeBtn">Retake</button>
+              </div>
+            </div>
+
+            <!-- Works on every phone, including over plain http:// where the live camera is blocked -->
+            <div class="upload-fallback" id="uploadFallback">
+              <label for="selfieFileInput" class="btn btn-ghost" id="uploadBtn">
+                <span id="uploadBtnText">Or take / choose a photo</span>
+              </label>
+              <input type="file" id="selfieFileInput" accept="image/*" capture="user" class="visually-hidden">
+              <button type="button" class="btn btn-ghost hidden" id="retryCameraBtn">Try camera again</button>
+            </div>
+
+            <p class="tip">Face the light, take sunglasses off, and keep everyone else out of the frame.</p>
+          </div>
+        </div>
+
+        <!-- Step 2: details -->
+        <div class="form-step" id="step-2">
+          <div class="field">
+            <label for="userName" class="form-label">Your name</label>
+            <input type="text" id="userName" name="name" class="form-input" placeholder="Priya Sharma"
+              autocomplete="name" autocapitalize="words" enterkeyhint="next" required>
+          </div>
+          <div class="field">
+            <label for="userPhone" class="form-label">Phone number</label>
+            <div class="input-group-row">
+              <input type="tel" id="countryCode" class="form-input input-country-code" value="+91"
+                inputmode="tel" autocomplete="tel-country-code" aria-label="Country code" required>
+              <input type="tel" id="userPhone" name="phone" class="form-input" placeholder="98765 43210"
+                inputmode="tel" autocomplete="tel-national" enterkeyhint="next" required>
+            </div>
+            <p class="hint">Your album link can be sent here on WhatsApp.</p>
+          </div>
+          <div class="field">
+            <label for="userEmail" class="form-label">Email <span class="optional">(optional)</span></label>
+            <input type="email" id="userEmail" name="email" class="form-input" placeholder="you@example.com"
+              inputmode="email" autocomplete="email" autocapitalize="none" enterkeyhint="done">
+          </div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="consent" required checked>
+            <span class="checkmark" aria-hidden="true"></span>
+            <span>I agree to my face being matched to find my photos. It is only used for this event and is never shared.</span>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary hidden" id="prevBtn">Back</button>
+          <button type="button" class="btn btn-primary" id="nextBtn" disabled>Continue</button>
+          <button type="submit" class="btn btn-primary hidden" id="submitBtn">
+            <span class="btn-text">Find my photos</span>
+            <span class="btn-loading hidden"><span class="spinner"></span>Matching…</span>
+          </button>
+        </div>
+      </form>
     </div>
-  </nav>
 
-  <!-- Hero Section -->
-  <section class="hero" id="hero">
-    <div class="hero-content">
-      <div>
-        <div class="hero-badge">
-          <span class="badge-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
-          </span>
-          <span>AI-Powered Photo Matching</span>
-        </div>
-        <h1 class="hero-title">
-          <div class="reveal-container">
-            <span class="reveal-text">Find Your</span>
-          </div>
-          <div class="reveal-container">
-            <span class="reveal-text title-accent">Perfect Moments</span>
-          </div>
-        </h1>
-        <p class="hero-subtitle">
-          Capture every smile, every tear, every dance move. Our AI matches your face
-          to all your photos from the event — no manual searching required.
-        </p>
-        <div class="hero-actions">
-          <a href="#enroll" class="btn btn-primary btn-lg">
-            <span class="btn-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            </span>
-            Get My Photos
-          </a>
-          <a href="#features" class="btn btn-secondary btn-lg">
-            Learn More
-          </a>
-        </div>
-        <div class="hero-stats">
-          <div class="stat">
-            <span class="stat-value" id="stat-photos">0</span>
-            <span class="stat-label">Photos Processed</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat">
-            <span class="stat-value" id="stat-guests">0</span>
-            <span class="stat-label">Guests Enrolled</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat">
-            <span class="stat-value" id="stat-faces">0</span>
-            <span class="stat-label">Faces Detected</span>
-          </div>
-        </div>
-      </div>
-      <div class="hero-visual">
-        <div class="hero-card hero-card-main">
-          <div class="card-glow"></div>
-          <div class="card-content">
-            <div class="preview-placeholder">
-              <span class="preview-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-              </span>
-              <span class="preview-text">Your photos await</span>
-            </div>
-          </div>
-        </div>
-        <div class="hero-card hero-card-floating hero-card-1">
-          <div class="mini-preview">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </div>
-        </div>
-        <div class="hero-card hero-card-floating hero-card-2">
-          <div class="mini-preview">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M17 18a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2"/><rect width="18" height="18" x="3" y="4" rx="2"/><circle cx="12" cy="10" r="2"/><line x1="8" x2="8" y1="2" y2="4"/><line x1="16" x2="16" y1="2" y2="4"/></svg>
-          </div>
-        </div>
-        <div class="hero-card hero-card-floating hero-card-3">
-          <div class="mini-preview">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 22v-2"/><path d="m17 20.66-1-1.73"/><path d="M11 10.27 7 3.34"/><path d="m20.66 17-1.73-1"/><path d="m3.34 7 1.73 1"/><path d="M14 12h8"/><path d="M2 12h2"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m17 3.34-1 1.73"/><path d="m7 20.66 1-1.73"/></svg>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+    <footer class="footer">AURA by DARK intelligence</footer>
+  </main>
 
-  <!-- Features Section -->
-  <section class="features" id="features">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-badge">How It Works</span>
-        <h2 class="section-title">Three Simple Steps</h2>
-        <p class="section-subtitle">From selfie to photo album in seconds</p>
-      </div>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M15.6 11.6a.5.5 0 0 0 0-.2c-.2-1-1.2-2.4-3.6-2.4s-3.4 1.4-3.6 2.4a.5.5 0 0 0 0 .2"/><path d="M9 18h6"/><path d="M10 22h4"/><rect width="20" height="14" x="2" y="3" rx="2"/></svg>
-          </div>
-          <div class="feature-number">01</div>
-          <h3 class="feature-title">Take a Live Selfie</h3>
-          <p class="feature-desc">Smile for the camera! Capture a live photo. Our AI will use this to find you in all
-            the event photos.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M12 2a4 4 0 0 1 4 4"/><path d="M12 2a4 4 0 0 0-4 4"/><path d="M9 18v-6.5a1.5 1.5 0 0 1 3 0V14a1.5 1.5 0 0 0 3 0v-1.5a1.5 1.5 0 0 1 3 0V18a6 6 0 0 1-6 6h0a6 6 0 0 1-6-6V8a1.5 1.5 0 0 1 3 0v3.5a1.5 1.5 0 0 0 3 0"/><circle cx="12" cy="6" r="2"/></svg>
-          </div>
-          <div class="feature-number">02</div>
-          <h3 class="feature-title">AI Matching</h3>
-          <p class="feature-desc">Our advanced face recognition instantly matches your selfie to photos where you
-            appear.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-          </div>
-          <div class="feature-number">03</div>
-          <h3 class="feature-title">Get Your Album</h3>
-          <p class="feature-desc">Access your personal collection of solo shots and group photos — all organized just
-            for you.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Enrollment Section -->
-  <section class="enroll-section" id="enroll">
-    <div class="container">
-      <div class="enroll-wrapper">
-        <div class="enroll-info">
-          <span class="section-badge">Get Started</span>
-          <h2 class="section-title">Find Your Photos</h2>
-          <p class="enroll-desc">
-            Capture a live selfie and we'll match you to your photos from the event.
-            It only takes a few seconds!
-          </p>
-          <div class="privacy-note">
-            <span class="privacy-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </span>
-            <p>Your photo is only used for matching and is never shared. We respect your privacy.</p>
-          </div>
-        </div>
-        <div class="enroll-form-container">
-          <form class="enroll-form" id="enrollForm">
-            <!-- Step 1: Selfie Upload -->
-            <div class="form-step active" id="step-1">
-              <div class="camera-container" id="cameraArea">
-                <div class="camera-view-window" id="cameraView">
-                  <div class="camera-stream-wrapper" id="videoWrapper">
-                    <video id="cameraStream" autoplay playsinline muted></video>
-                    <div class="camera-overlay">
-                      <div class="camera-frame"></div>
-                    </div>
-                    <canvas id="captureCanvas" class="hidden"></canvas>
-                  </div>
-
-                  <div class="preview-content hidden" id="previewContent">
-                    <img id="selfiePreview" alt="Selfie preview">
-                  </div>
-
-                  <!-- Shown when the live camera can't run (e.g. phones on http:// venue Wi-Fi) -->
-                  <div class="camera-unavailable hidden" id="cameraUnavailable">
-                    <span class="camera-unavailable-icon">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-                    </span>
-                    <p id="cameraUnavailableText">Tap the button below to take a selfie with your phone's camera.</p>
-                  </div>
-                </div>
-
-                <div class="camera-actions" id="cameraActions">
-                  <button type="button" class="btn btn-primary btn-lg" id="captureBtn">
-                    <span class="btn-icon">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-                    </span>
-                    Capture Selfie
-                  </button>
-                </div>
-
-                <div class="retake-actions hidden" id="retakeActions">
-                  <button type="button" class="btn btn-outline" id="retakeBtn">
-                    <span class="btn-icon">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-                    </span>
-                    Retake Photo
-                  </button>
-                </div>
-
-                <!-- Works on every phone, including over plain http:// where the live camera is blocked -->
-                <div class="upload-fallback" id="uploadFallback">
-                  <label for="selfieFileInput" class="btn btn-outline" id="uploadBtn">
-                    <span class="btn-icon">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                    </span>
-                    <span id="uploadBtnText">Or take / choose a photo</span>
-                  </label>
-                  <input type="file" id="selfieFileInput" accept="image/*" capture="user" class="visually-hidden">
-                  <button type="button" class="btn btn-sm btn-outline hidden" id="retryCameraBtn">Try camera again</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 2: User Info -->
-            <div class="form-step" id="step-2">
-              <div class="form-group">
-                <label for="userName" class="form-label">Your Name *</label>
-                <input type="text" id="userName" name="name" class="form-input" placeholder="e.g. John Doe" required>
-              </div>
-              <div class="form-group">
-                <label for="userPhone" class="form-label">Phone Number *</label>
-                <div class="input-group-row">
-                  <input type="text" id="countryCode" class="form-input input-country-code" value="+91"
-                    placeholder="+91" required>
-                  <input type="tel" id="userPhone" name="phone" class="form-input" placeholder="Mobile Number"
-                    style="flex: 1;" required>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="userEmail" class="form-label">Email Address</label>
-                <input type="email" id="userEmail" name="email" class="form-input" placeholder="you@example.com">
-              </div>
-              <div class="form-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" id="consent" required checked>
-                  <span class="checkmark"></span>
-                  <span>I consent to facial recognition processing for finding my photos</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Progress Indicator -->
-            <div class="form-progress">
-              <div class="progress-step active" data-step="1">
-                <span class="step-number">1</span>
-                <span class="step-label">Selfie</span>
-              </div>
-              <div class="progress-line"></div>
-              <div class="progress-step" data-step="2">
-                <span class="step-number">2</span>
-                <span class="step-label">Details</span>
-              </div>
-            </div>
-
-            <!-- Form Actions -->
-            <div class="form-actions">
-              <button type="button" class="btn btn-secondary hidden" id="prevBtn">Back</button>
-              <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
-              <button type="submit" class="btn btn-primary hidden" id="submitBtn">
-                <span class="btn-text">Find My Photos</span>
-                <span class="btn-loading hidden">
-                  <span class="spinner"></span>
-                  Matching...
-                </span>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Results Modal -->
-  <div class="modal hidden" id="resultsModal">
+  <!-- Results sheet -->
+  <div class="modal hidden" id="resultsModal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
     <div class="modal-backdrop" id="modalBackdrop"></div>
     <div class="modal-content">
-      <button class="modal-close" id="modalClose">&times;</button>
+      <div class="grab" aria-hidden="true"></div>
 
-      <!-- Success State -->
       <div class="modal-body" id="resultSuccess">
-        <div class="success-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <h2 class="modal-title">Photos Found!</h2>
-        <p class="modal-subtitle" id="matchMessage">Welcome back! Your photos are ready.</p>
+        <h2 class="modal-title" id="resultTitle">We found you</h2>
+        <p class="modal-subtitle" id="matchMessage">Your photos are ready.</p>
 
         <div class="photo-summary">
           <div class="summary-card">
-            <span class="summary-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </span>
             <span class="summary-count" id="soloCount">0</span>
-            <span class="summary-label">Solo Photos</span>
+            <span class="summary-label">Solo photos</span>
           </div>
           <div class="summary-card">
-            <span class="summary-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </span>
             <span class="summary-count" id="groupCount">0</span>
-            <span class="summary-label">Group Photos</span>
+            <span class="summary-label">Group photos</span>
           </div>
         </div>
 
-        <div class="gallery-preview" id="galleryPreview">
-          <!-- Photos will be loaded here -->
-        </div>
+        <div class="gallery-preview" id="galleryPreview"></div>
 
-        <a href="#" class="btn btn-primary btn-lg" id="viewGalleryBtn">View All My Photos</a>
+        <a href="#" class="btn btn-primary" id="viewGalleryBtn">See all my photos</a>
       </div>
 
-      <!-- Error State -->
       <div class="modal-body hidden" id="resultError">
-        <div class="error-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-        </div>
-        <h2 class="modal-title">No Match Found</h2>
-        <p class="modal-subtitle" id="errorMessage">We couldn't find your photos yet.</p>
-        <p class="error-hint">This could mean photos are still being processed, or try a clearer selfie.</p>
-        <button class="btn btn-primary" id="tryAgainBtn">Try Again</button>
+        <h2 class="modal-title">We couldn't find you yet</h2>
+        <p class="modal-subtitle" id="errorMessage">No match for this selfie.</p>
+        <p class="error-hint">Photos may still be sorting, so check back in a few minutes. A brighter, front-facing selfie also helps.</p>
+        <button type="button" class="btn btn-primary" id="tryAgainBtn">Try again</button>
       </div>
     </div>
   </div>
 
-  <!-- Gallery Page (Hidden by default) -->
+  <!-- Gallery -->
   <section class="gallery-section hidden" id="gallerySection">
-    <div class="container">
-      <div class="gallery-header">
-        <a href="#" class="back-link" id="backToHome">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" width="16" height="16" stroke="currentColor"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-          Back to Home
-        </a>
-        <div class="gallery-user">
-          <span class="gallery-user-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </span>
-          <span class="gallery-user-name" id="galleryUserName">Guest</span>
-        </div>
-      </div>
+    <div class="gallery-bar">
+      <button type="button" class="icon-btn" id="backToHome" aria-label="Back">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2 class="gallery-user-name" id="galleryUserName">Guest</h2>
+    </div>
 
-      <div class="gallery-tabs">
-        <button class="tab-btn active" data-tab="solo">
-          <span class="tab-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </span>
-          Solo Photos
-          <span class="tab-count" id="tabSoloCount">0</span>
-        </button>
-        <button class="tab-btn" data-tab="group">
-          <span class="tab-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </span>
-          Group Photos
-          <span class="tab-count" id="tabGroupCount">0</span>
-        </button>
-      </div>
+    <div class="gallery-tabs" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="solo" role="tab">Solo <span class="tab-count" id="tabSoloCount">0</span></button>
+      <button type="button" class="tab-btn" data-tab="group" role="tab">Group <span class="tab-count" id="tabGroupCount">0</span></button>
+    </div>
 
-      <div class="gallery-grid" id="galleryGrid">
-        <!-- Photos will be loaded dynamically -->
-      </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
 
-      <div class="gallery-empty hidden" id="galleryEmpty">
-        <span class="empty-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-        </span>
-        <p>No photos in this category yet</p>
-      </div>
+    <div class="gallery-empty hidden" id="galleryEmpty">
+      <p>No photos here yet. New photos are added as they are sorted, so check back soon.</p>
     </div>
   </section>
 
-  <!-- Lightbox -->
-  <div class="lightbox hidden" id="lightbox">
-    <button class="lightbox-close" id="lightboxClose">&times;</button>
-    <button class="lightbox-nav lightbox-prev" id="lightboxPrev">&#8249;</button>
-    <button class="lightbox-nav lightbox-next" id="lightboxNext">&#8250;</button>
-    <div class="lightbox-content">
+  <!-- Photo viewer -->
+  <div class="lightbox hidden" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+    <div class="lb-top">
+      <span id="lightboxCounter">1 / 1</span>
+      <button type="button" class="icon-btn" id="lightboxClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <button type="button" class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Previous photo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <button type="button" class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Next photo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+    <div class="lightbox-content" id="lightboxContent">
       <img id="lightboxImage" src="" alt="Photo">
     </div>
-    <div class="lightbox-info">
-      <span id="lightboxCounter">1 / 10</span>
-      <a href="#" class="btn btn-outline btn-sm" id="downloadBtn" download>Download</a>
+    <div class="lb-bottom">
+      <button type="button" class="btn btn-light" id="downloadBtn">Save photo</button>
+      <p class="lb-hint">Swipe to see more. If Save doesn't work, press and hold the photo.</p>
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-brand">
-          <span class="logo-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="10"/></svg>
-          </span>
-          <span class="logo-text">AURA</span>
-        </div>
-        <p class="footer-text">
-          Capturing your precious moments, powered by AI.
-        </p>
-        <p class="footer-copyright">
-          &copy; 2026 DARK intelligence. All rights reserved.
-        </p>
-      </div>
-    </div>
-  </footer>
-
-  <script type="module" src="./js/main.js?v=2026-11-14c"></script>
+  <script type="module" src="./js/main.js?v=2026-11-15b"></script>
 </body>
 
 </html>

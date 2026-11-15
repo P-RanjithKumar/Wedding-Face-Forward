@@ -12,7 +12,9 @@ EXE = PROJ / "dist" / "AURA" / "AURA.exe"
 shutil.rmtree(WORK, ignore_errors=True)
 appdata = WORK / "appdata"; appdata.mkdir(parents=True)
 AURA = appdata / "AURA"
-env = dict(os.environ, LOCALAPPDATA=str(appdata))
+# Own port so the check also works while the installed AURA is open (it uses 8000)
+PORT = int(os.environ.get("SMOKE_PORT", "8790"))
+env = dict(os.environ, LOCALAPPDATA=str(appdata), AURA_GUEST_PORT=str(PORT))
 SAMPLE = Path(sys.argv[3])  # insightface t1.jpg (group photo)
 
 results = []
@@ -23,7 +25,7 @@ def kill(p):
     subprocess.run(["taskkill", "/PID", str(p.pid), "/T", "/F"], capture_output=True)
 
 def http(path, data=None, headers=None):
-    req = urllib.request.Request(f"http://127.0.0.1:8000{path}", data=data, headers=headers or {})
+    req = urllib.request.Request(f"http://127.0.0.1:{PORT}{path}", data=data, headers=headers or {})
     try:
         with urllib.request.urlopen(req, timeout=120) as r:
             return r.status, r.read()
@@ -148,6 +150,11 @@ if tb:
     i = logtxt.index("Traceback"); print(logtxt[i:i + 1500])
 
 # ── 6. WhatsApp browser download goes where the launch looks ─────
+# (~150 MB download; skipped when SMOKE_SKIP_CHROMIUM=1)
+if os.environ.get("SMOKE_SKIP_CHROMIUM") == "1":
+    print("SKIP Chromium download check (SMOKE_SKIP_CHROMIUM=1)")
+    print("ALL CHECKS PASSED" if all(results) else f"{results.count(False)} FAILED")
+    sys.exit(0 if all(results) else 1)
 t0 = time.time()
 pw = subprocess.run([str(EXE), "--playwright-install"], env=env, timeout=900)
 browsers = appdata / "ms-playwright"
@@ -157,3 +164,4 @@ check("built app downloads Chromium into %LOCALAPPDATA%\\ms-playwright (where Wh
       f"exit={pw.returncode}, {installed}, {time.time() - t0:.0f}s")
 
 print("ALL CHECKS PASSED" if all(results) else f"{results.count(False)} FAILED")
+sys.exit(0 if all(results) else 1)

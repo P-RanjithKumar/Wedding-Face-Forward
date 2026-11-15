@@ -17,18 +17,20 @@ def check(name, cond, extra=""):
 
 # ── 1. Guest port ────────────────────────────────────────────────
 dist_utils.get_user_data_dir = lambda: WORK          # keep runtime files in the scratch folder
-blocker = socket.socket(); blocker.bind(("0.0.0.0", 8000)); blocker.listen()
-port = dist_utils.pick_guest_port()
-check("port 8000 busy -> picks the next free port", port == 8001, str(port))
+# Use a free pair of ports (works even while the installed AURA holds 8000)
+P = next(p for p in range(8810, 8900, 2) if dist_utils.port_is_free(p) and dist_utils.port_is_free(p + 1))
+blocker = socket.socket(); blocker.bind(("0.0.0.0", P)); blocker.listen()
+port = dist_utils.pick_guest_port(preferred=P)
+check("preferred port busy -> picks the next free port", port == P + 1, f"{P} busy -> {port}")
 check("chosen port recorded for server/dashboard/wizard",
-      (WORK / "guest_port.txt").read_text() == "8001" and dist_utils.get_guest_port() == 8001)
+      (WORK / "guest_port.txt").read_text() == str(P + 1) and dist_utils.get_guest_port() == P + 1)
 blocker.close()
 os.environ.pop("AURA_GUEST_PORT")
-check("other processes read the recorded port", dist_utils.get_guest_port() == 8001)
-check("port 8000 free again -> 8000", dist_utils.pick_guest_port() == 8000)
+check("other processes read the recorded port", dist_utils.get_guest_port() == P + 1)
+check("preferred port free again -> used", dist_utils.pick_guest_port(preferred=P) == P)
 
 from aura_app.widgets import first_run_wizard as frw
-check("wizard QR link uses the recorded port", frw.guest_url().endswith(":8000"), frw.guest_url())
+check("wizard QR link uses the recorded port", frw.guest_url().endswith(f":{P}"), frw.guest_url())
 
 # ── 2. Supervisor ────────────────────────────────────────────────
 from aura_app import process_manager as pm_mod
@@ -91,3 +93,4 @@ for kind, expect_left, label in [("fail", 0, "failed match -> uploaded selfie de
     check(label, r.status_code == 200 and left == expect_left, f"{left} file(s) left")
 
 print("ALL CHECKS PASSED" if all(results) else f"{results.count(False)} FAILED")
+sys.exit(0 if all(results) else 1)
